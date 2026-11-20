@@ -208,6 +208,53 @@ escenario('el manifest y los íconos existen', async (page, context, url) => {
   for (const a of sw.match(/'\.\/[^']*'/g)) assert.equal((await page.request.get(url + a.slice(3, -1))).status(), 200, a);
 });
 
+// Bienvenida: arranca sin configurar, como la primera vez que alguien abre la app.
+escenarios.push({ nombre: 'bienvenida: nombre, productos y en qué gasta', sinConfigurar: true, fn: async (page) => {
+  assert.equal(await page.locator('.pestanas').isVisible(), false);
+  await page.fill('#negocio', 'La Esquina');
+  await page.click('[data-act="bien-siguiente"]');
+  await page.click('[data-act="bien-siguiente"]');
+  assert.match(await texto(page, '.error'), /al menos un producto/);
+  await page.fill('.producto-nombre >> nth=0', 'Bidones');
+  await page.click('[data-act="bien-otro-producto"]');
+  await page.fill('.producto-nombre >> nth=1', 'Pizzetas');
+  await page.click('[data-act="bien-siguiente"]');
+  await page.click('[data-act="bien-rubro"][data-nombre="Harina"]');
+  await page.fill('#rubro-otro', 'Fletes');
+  await page.click('[data-act="bien-agregar-rubro"]');
+  await page.click('[data-act="bien-empezar"]');
+  assert.equal(await texto(page, '.barra h1'), 'La Esquina');
+  assert.equal(await page.locator('.pestanas').isVisible(), true);
+  await page.click('[data-act="nuevo"][data-tipo="gasto"]');
+  const prods = await page.locator('#hoja [data-campo="productoId"]').allInnerTexts();
+  assert.deepEqual(prods, ['Bidones', 'Pizzetas', 'General']);
+  const rubros = await page.locator('#hoja [data-campo="rubroId"]').allInnerTexts();
+  assert.deepEqual(rubros, ['Harina', 'Fletes', 'Otros']);
+  await page.reload();
+  assert.equal(await page.locator('#negocio').count(), 0, 'no vuelve a preguntar');
+}});
+
+escenarios.push({ nombre: 'bienvenida: se puede volver atrás sin perder lo escrito', sinConfigurar: true, fn: async (page) => {
+  await page.fill('#negocio', 'Mi negocio');
+  await page.click('[data-act="bien-siguiente"]');
+  await page.fill('.producto-nombre >> nth=0', 'Tortas');
+  await page.click('[data-act="bien-atras"]');
+  assert.equal(await page.inputValue('#negocio'), 'Mi negocio');
+  await page.click('[data-act="bien-siguiente"]');
+  assert.equal(await page.inputValue('.producto-nombre >> nth=0'), 'Tortas');
+}});
+
+escenario('el nombre del negocio se cambia en Más y sale en el resumen', async (page, context) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.evaluate(() => { delete Navigator.prototype.share; });
+  await page.click('[data-act="tab"][data-tab="mas"]');
+  page.once('dialog', d => d.accept('Bidones Juan'));
+  await page.click('[data-act="nombrar-negocio"]');
+  assert.equal(await texto(page, '.barra h1'), 'Bidones Juan');
+  await page.click('[data-act="compartir"]');
+  assert.match(await page.evaluate(() => navigator.clipboard.readText()), /^Bidones Juan\nResumen semana/);
+});
+
 (async () => {
   const filtro = process.argv[2];
   const srv = servidor().listen(0);
@@ -223,6 +270,15 @@ escenario('el manifest y los íconos existen', async (page, context, url) => {
     page.on('pageerror', err => errores.push(err.message));
     try {
       await page.goto(url);
+      // Salvo en la bienvenida, cada escenario arranca con el negocio del diseño ya configurado.
+      if (!e.sinConfigurar) {
+        await page.evaluate(() => {
+          Store.configurar({ negocio: '', productos: ['Bidones', 'Pizzetas'], rubros: ['Harina', 'Huevos', 'Azúcar', 'Levadura', 'Envases', 'Gas', 'Otros'] });
+          Store.agregar('insumos', { nombre: 'Harina', presentacion: '1 kg' });
+          Store.agregar('insumos', { nombre: 'Huevos', presentacion: 'maple' });
+          App.pintar();
+        });
+      }
       await e.fn(page, context, url);
       assert.deepEqual(errores, [], 'errores de JavaScript en la página');
       console.log('ok   ' + e.nombre);

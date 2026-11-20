@@ -6,6 +6,22 @@ deja cada producto**. Todo queda guardado en tu celular: no hace falta cuenta ni
 > Los números de las capturas son inventados, de ejemplo.
 > Hay un [video de un minuto](video/control-gastos-demo.mp4) que muestra todo esto.
 
+## 0. La primera vez
+
+La app pregunta tres cosas, y todo se puede cambiar después en **Más**:
+
+1. **Cómo se llama tu emprendimiento** (opcional): sale arriba y en el resumen.
+2. **Qué vendés**: escribí cada producto. Tocá **+ Otro producto** para sumar más.
+3. **En qué gastás**: tocá los que uses. Si falta alguno, escribilo en **¿Otro?**.
+
+<p>
+<img src="img/00-bienvenida-1.png" width="200" alt="Nombre del emprendimiento">
+<img src="img/00-bienvenida-2.png" width="200" alt="Qué vendés">
+<img src="img/00-bienvenida-3.png" width="200" alt="En qué gastás">
+</p>
+
+Los insumos (harina, huevos…) se agregan en la pestaña **Insumos** con **+ Agregar insumo**.
+
 ## 1. La pantalla de Inicio
 
 Al abrir la app ves cómo va **esta semana** (de lunes a domingo):
@@ -71,9 +87,9 @@ terminaría el que estás usando. Si lo tocaste sin querer, aparece **Deshacer**
 En Inicio (o en **Más**), **Compartir resumen** arma un mensaje con los números de la semana o el
 mes que estás mirando, para mandarlo por WhatsApp.
 
-## 7. Agregar productos o tipos de gasto
+## 7. Cambiar el nombre, productos o tipos de gasto
 
-En **Más** podés agregar un producto nuevo (por ejemplo, empanadas) o un tipo de gasto, y cambiar
+En **Más** podés cambiar el nombre del emprendimiento, agregar un producto nuevo (por ejemplo, empanadas) o un tipo de gasto, y cambiar
 nombres. Lo que ya tiene movimientos anotados no se puede borrar, pero sí renombrar.
 
 <img src="img/09-mas.png" width="300" alt="Más">

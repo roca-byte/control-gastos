@@ -12,12 +12,13 @@ var Resumen = (function () {
     var etiqueta = R.etiquetaRango(o.rango);
     var esMes = o.rango.desde === R.rangoMes(o.rango.desde).desde && o.rango.hasta === R.rangoMes(o.rango.desde).hasta;
     var t = o.totales;
-    var lineas = [
+    var lineas = o.negocio ? [o.negocio] : [];
+    lineas.push(
       'Resumen ' + (esMes ? '' : 'semana ') + etiqueta,
       'Recaudado: ' + pesos(t.recaudado),
       'Gastado: ' + pesos(t.gastado),
       'Quedó: ' + pesos(t.quedo)
-    ];
+    );
     o.productos.forEach(function (p) {
       var x = t.porProducto[p.id];
       if (!x || p.id === 'general') return;

@@ -26,6 +26,8 @@ Orden de carga: `reglas → calculadora → store → grafico → resumen → ap
 ```js
 {
   version: 1,
+  configurado: false,                        // true después de la bienvenida
+  negocio: '',                                // nombre del emprendimiento (opcional)
   productos:   [{ id, nombre, fijo? }],        // 'general' es fijo
   rubros:      [{ id, nombre }],
   movimientos: [{ id, tipo: 'gasto'|'venta', fecha: 'AAAA-MM-DD', monto, productoId, rubroId?, cantidad?, nota, creado }],

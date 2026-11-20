@@ -5,9 +5,9 @@ App para el celular que anota los **gastos y ventas** de un emprendimiento chico
 programador: se usa con dos o tres toques y no tiene palabras técnicas.
 
 <p>
+  <img src="docs/img/00-bienvenida-2.png" width="230" alt="Bienvenida: qué vendés">
   <img src="docs/img/01-inicio.png" width="230" alt="Inicio: cómo va la semana">
   <img src="docs/img/05-anotar-gasto.png" width="230" alt="Anotar un gasto">
-  <img src="docs/img/08-insumos.png" width="230" alt="Cuánto dura cada insumo">
 </p>
 
 **[Ver el video de demostración (1 minuto)](docs/video/control-gastos-demo.mp4)**
@@ -28,22 +28,23 @@ programador: se usa con dos o tres toques y no tiene palabras técnicas.
 
 ## Para cualquier emprendimiento
 
-Viene armada con **Bidones** y **Pizzetas**, pero todo se adapta desde la misma app, sin tocar
-código:
+No viene atada a ningún negocio. **La primera vez que se abre pregunta** cómo se llama el
+emprendimiento, qué vende y en qué gasta (con sugerencias para tocar). Después todo se cambia
+desde la misma app, sin tocar código:
 
 | Qué | Dónde | Se puede |
 |---|---|---|
+| Nombre del emprendimiento | Más → Tu emprendimiento | cambiar o dejar vacío |
 | Productos (empanadas, tortas, viandas…) | Más → Productos | agregar, cambiar el nombre, borrar |
 | Tipos de gasto (harina, envases, nafta…) | Más → ¿En qué se gasta? | agregar, cambiar el nombre, borrar |
 | Insumos (harina 1 kg, maple de huevos…) | Insumos | agregar, cambiar nombre y presentación, borrar |
 
-Lo único fijo es **General**, porque es donde van los gastos de todo el negocio. Lo que ya
-tiene movimientos anotados no se borra (para que los totales sigan cerrando), pero se le puede
+Lo único fijo es **General**, donde van los gastos de todo el negocio. Lo que ya tiene
+movimientos anotados no se borra (para que los totales sigan cerrando), pero se le puede
 cambiar el nombre.
 
-**Para pasársela a otra persona:** compartile el link de la app. Cada celular guarda sus propios
-datos: nadie ve lo de nadie. Que al abrirla por primera vez borre o renombre los productos de
-ejemplo en **Más**.
+**Para pasársela a otra persona:** compartile el link. Cada celular guarda sus propios datos:
+nadie ve lo de nadie, y cada uno arranca con su propia bienvenida.
 
 ## Cómo empezar
 

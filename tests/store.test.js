@@ -12,22 +12,58 @@ function falso(inicial) {
     removeItem: k => { delete m[k]; },
   };
 }
+// Configuración de las pruebas: el mismo negocio que el diseño (bidones y pizzetas).
+const listo = () => {
+  Store.configurar({ negocio: '', productos: ['Bidones', 'Pizzetas'], rubros: ['Harina', 'Huevos', 'Azúcar', 'Levadura', 'Envases', 'Gas', 'Otros'] });
+  Store.agregar('insumos', { nombre: 'Harina', presentacion: '1 kg' });
+  Store.agregar('insumos', { nombre: 'Huevos', presentacion: 'maple' });
+};
 const gasto = (extra) => Object.assign({ tipo: 'gasto', fecha: '2026-11-18', monto: 1500, productoId: 'pizzetas', rubroId: 'harina', nota: '' }, extra);
 
-test('arranca con datos de fábrica', () => {
+test('arranca sin configurar: solo General, sin rubros ni insumos', () => {
   const r = Store.iniciar(falso());
   assert.equal(r.aviso, null);
   const d = Store.datos();
-  assert.deepEqual(d.productos.map(p => p.id), ['bidones', 'pizzetas', 'general']);
-  assert.equal(d.productos[2].fijo, true);
-  assert.deepEqual(d.rubros.map(p => p.nombre), ['Harina', 'Huevos', 'Azúcar', 'Levadura', 'Envases', 'Gas', 'Otros']);
-  assert.deepEqual(d.insumos.map(i => i.nombre + ' (' + i.presentacion + ')'), ['Harina (1 kg)', 'Huevos (maple)', 'Azúcar (1 kg)']);
+  assert.equal(d.configurado, false);
+  assert.equal(d.negocio, '');
+  assert.deepEqual(d.productos.map(p => p.id), ['general']);
+  assert.equal(d.productos[0].fijo, true);
+  assert.deepEqual(d.rubros, []);
+  assert.deepEqual(d.insumos, []);
   assert.deepEqual(d.movimientos, []);
   assert.equal(d.ultimaCopia, null);
 });
 
-test('guardar, editar y borrar un gasto persiste', () => {
+test('la bienvenida configura negocio, productos y rubros', () => {
   const s = falso(); Store.iniciar(s);
+  assert.equal(Store.configurar({ negocio: ' ', productos: ['  ', ''], rubros: ['Harina'] }).ok, false, 'hace falta un producto');
+  const r = Store.configurar({ negocio: '  La Esquina ', productos: ['Bidones', ' Pizzetas ', '', 'bidones'], rubros: ['Harina', 'Gas'] });
+  assert.equal(r.ok, true);
+  Store.iniciar(s);
+  const d = Store.datos();
+  assert.equal(d.configurado, true);
+  assert.equal(d.negocio, 'La Esquina');
+  assert.deepEqual(d.productos.map(p => p.nombre), ['Bidones', 'Pizzetas', 'General'], 'sin vacíos ni repetidos, General al final');
+  assert.deepEqual(d.rubros.map(p => p.nombre), ['Harina', 'Gas', 'Otros'], 'Otros siempre está');
+  assert.equal(Store.configurar({ negocio: 'x', productos: ['y'], rubros: [] }).ok, false, 'solo una vez');
+});
+
+test('el nombre del negocio se cambia después', () => {
+  Store.iniciar(falso()); listo();
+  assert.equal(Store.nombrarNegocio('  Bidones Juan ').ok, true);
+  assert.equal(Store.datos().negocio, 'Bidones Juan');
+  assert.equal(Store.nombrarNegocio('').ok, true, 'vacío vale: se usa el nombre de la app');
+});
+
+test('datos de antes de la bienvenida se toman como ya configurados', () => {
+  const viejo = { version: 1, productos: [{ id: 'general', nombre: 'General', fijo: true }, { id: 'bidones', nombre: 'Bidones' }], rubros: [], movimientos: [], insumos: [], ultimaCopia: null };
+  Store.iniciar(falso({ 'controlGastos.v1': JSON.stringify(viejo) }));
+  assert.equal(Store.datos().configurado, true);
+  assert.equal(Store.datos().negocio, '');
+});
+
+test('guardar, editar y borrar un gasto persiste', () => {
+  const s = falso(); Store.iniciar(s); listo();
   const r = Store.guardarMovimiento(gasto());
   assert.equal(r.ok, true); assert.ok(r.mov.id); assert.ok(r.mov.creado);
   const r2 = Store.guardarMovimiento(Object.assign({}, r.mov, { monto: 2000 }));
@@ -41,7 +77,7 @@ test('guardar, editar y borrar un gasto persiste', () => {
 });
 
 test('validaciones', () => {
-  Store.iniciar(falso());
+  Store.iniciar(falso()); listo();
   assert.equal(Store.guardarMovimiento(gasto({ monto: 0 })).ok, false);
   assert.equal(Store.guardarMovimiento(gasto({ monto: 10.5 })).ok, false);
   assert.equal(Store.guardarMovimiento({ tipo: 'venta', fecha: '2026-11-18', monto: 100, productoId: 'general', nota: '' }).ok, false);
@@ -55,7 +91,7 @@ test('validaciones', () => {
 });
 
 test('agregar, renombrar y borrar en las listas', () => {
-  Store.iniciar(falso());
+  Store.iniciar(falso()); listo();
   const emp = Store.agregar('productos', { nombre: '  Empanadas ' });
   assert.equal(emp.nombre, 'Empanadas');
   assert.equal(Store.agregar('rubros', { nombre: 'Harina' }).id !== 'harina', true, 'id repetido lleva sufijo');
@@ -68,7 +104,7 @@ test('agregar, renombrar y borrar en las listas', () => {
 });
 
 test('no se borra General ni lo que tiene movimientos', () => {
-  Store.iniciar(falso());
+  Store.iniciar(falso()); listo();
   assert.equal(Store.borrar('productos', 'general').ok, false);
   Store.guardarMovimiento(gasto());
   const r = Store.borrar('rubros', 'harina');
@@ -78,7 +114,7 @@ test('no se borra General ni lo que tiene movimientos', () => {
 });
 
 test('doble toque en "Abrí uno nuevo" el mismo día no duplica', () => {
-  Store.iniciar(falso());
+  Store.iniciar(falso()); listo();
   const id = Store.datos().insumos[0].id;
   assert.equal(Store.abrirInsumo(id, '2026-11-20'), true);
   assert.equal(Store.abrirInsumo(id, '2026-11-20'), false);
@@ -95,11 +131,11 @@ test('datos rotos: arranca vacío, guarda lo roto y avisa', () => {
   const r = Store.iniciar(s);
   assert.equal(typeof r.aviso, 'string'); assert.ok(r.aviso.length > 0);
   assert.equal(s.getItem('controlGastos.v1.danado'), '{roto');
-  assert.equal(Store.datos().productos.length, 3);
+  assert.deepEqual(Store.datos().productos.map(p => p.id), ['general']);
 });
 
 test('copia de seguridad ida y vuelta', () => {
-  const s = falso(); Store.iniciar(s);
+  const s = falso(); Store.iniciar(s); listo();
   Store.guardarMovimiento(gasto());
   const copia = Store.exportarCopia('2026-11-20');
   assert.equal(JSON.parse(copia).app, 'control-gastos');
@@ -115,7 +151,7 @@ test('copia de seguridad ida y vuelta', () => {
 });
 
 test('archivo equivocado se rechaza y no toca nada', () => {
-  Store.iniciar(falso());
+  Store.iniciar(falso()); listo();
   Store.guardarMovimiento(gasto());
   for (const t of ['hola', '{"app":"mash-check","version":1,"datos":{}}', '{"app":"control-gastos","version":99,"datos":{}}', '{"app":"control-gastos","version":1}', '{"app":"control-gastos","version":1,"datos":{"productos":[]}}']) {
     const r = Store.restaurarCopia(t);
@@ -125,7 +161,7 @@ test('archivo equivocado se rechaza y no toca nada', () => {
 });
 
 test('recordatorio de copia a los 30 días', () => {
-  Store.iniciar(falso());
+  Store.iniciar(falso()); listo();
   assert.equal(Store.necesitaCopia('2026-11-20'), false, 'sin movimientos no molesta');
   Store.guardarMovimiento(gasto());
   assert.equal(Store.necesitaCopia('2026-11-20'), true);
@@ -135,7 +171,7 @@ test('recordatorio de copia a los 30 días', () => {
 });
 
 test('si el celular no tiene lugar, avisa y no miente', () => {
-  const s = falso(); Store.iniciar(s);
+  const s = falso(); Store.iniciar(s); listo();
   s.setItem = () => { throw new Error('QuotaExceededError'); };
   const r = Store.guardarMovimiento(gasto());
   assert.equal(r.ok, false); assert.match(r.error, /lugar/);
@@ -143,7 +179,7 @@ test('si el celular no tiene lugar, avisa y no miente', () => {
 });
 
 test('una copia sin "ultimaCopia" no rompe el recordatorio', () => {
-  Store.iniciar(falso());
+  Store.iniciar(falso()); listo();
   Store.guardarMovimiento(gasto());
   const d = JSON.parse(Store.exportarCopia('2026-11-20')).datos;
   delete d.ultimaCopia;

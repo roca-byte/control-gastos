@@ -16,6 +16,24 @@ const SALIDA = path.join(RAIZ, 'docs', 'img');
   const { srv, url } = await arrancar();
   const browser = await chromium.launch();
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, serviceWorkers: 'block', colorScheme: 'light', locale: 'es-AR' });
+  // Primero la bienvenida, en un perfil vacío (como la primera vez que alguien abre la app).
+  {
+    const nuevo = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, serviceWorkers: 'block', colorScheme: 'light', locale: 'es-AR' });
+    const p = await nuevo.newPage();
+    await p.goto(url);
+    await p.fill('#negocio', 'La Esquina');
+    await p.screenshot({ path: path.join(SALIDA, '00-bienvenida-1.png') });
+    await p.click('[data-act="bien-siguiente"]');
+    await p.fill('.producto-nombre >> nth=0', 'Bidones');
+    await p.click('[data-act="bien-otro-producto"]');
+    await p.fill('.producto-nombre >> nth=1', 'Pizzetas');
+    await p.screenshot({ path: path.join(SALIDA, '00-bienvenida-2.png') });
+    await p.click('[data-act="bien-siguiente"]');
+    for (const r of ['Harina', 'Huevos', 'Envases', 'Gas']) await p.click(`[data-act="bien-rubro"][data-nombre="${r}"]`);
+    await p.screenshot({ path: path.join(SALIDA, '00-bienvenida-3.png') });
+    console.log('  docs/img/00-bienvenida-1..3.png');
+    await nuevo.close();
+  }
   const datos = JSON.stringify(Ejemplo.datos(Reglas.hoy()));
   await context.addInitScript((d) => { if (!localStorage.getItem('controlGastos.v1')) localStorage.setItem('controlGastos.v1', d); }, datos);
   const page = await context.newPage();

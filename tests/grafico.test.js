@@ -55,3 +55,10 @@ test('resumen del mes, pérdida y sin insumos', () => {
   assert.equal(Resumen.texto({ rango, totales: R.totales(m, rango), productos: PRODUCTOS, insumos: [], hoy: '2026-11-20' }),
     'Resumen noviembre 2026\nRecaudado: $0\nGastado: $500\nQuedó: −$500\n• Pizzetas: −$500 (vendido $0, gastado $500)');
 });
+
+test('el resumen lleva el nombre del negocio arriba si hay', () => {
+  const rango = R.rangoSemana('2026-11-20');
+  const t = Resumen.texto({ negocio: 'La Esquina', rango, totales: R.totales([], rango), productos: PRODUCTOS, insumos: [], hoy: '2026-11-20' });
+  assert.equal(t.split('\n')[0], 'La Esquina');
+  assert.equal(t.split('\n')[1], 'Resumen semana 16–22 nov');
+});

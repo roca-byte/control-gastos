@@ -221,7 +221,7 @@
 
   function textoResumen() {
     var d = Store.datos(), rango = rangoActual();
-    return Resumen.texto({ rango: rango, totales: R.totales(d.movimientos, rango), productos: d.productos, insumos: d.insumos, hoy: R.hoy() });
+    return Resumen.texto({ negocio: d.negocio, rango: rango, totales: R.totales(d.movimientos, rango), productos: d.productos, insumos: d.insumos, hoy: R.hoy() });
   }
 
   function compartir() {
@@ -301,6 +301,9 @@
   function pintarMas() {
     var d = Store.datos();
     return [
+      '<section class="tarjeta"><h2>Tu emprendimiento</h2>',
+      '<p>' + (d.negocio ? esc(d.negocio) : '<span class="sub">Sin nombre</span>') + '</p>',
+      '<button type="button" class="boton" data-act="nombrar-negocio">Cambiar el nombre</button></section>',
       '<section class="tarjeta"><h2>Herramientas</h2><div class="botones">',
       '<button type="button" class="boton" data-act="calc">🧮 Calculadora</button>',
       '<button type="button" class="boton" data-act="compartir">Compartir resumen</button></div>',
@@ -386,11 +389,65 @@
     return n === null ? null : n.trim();
   }
 
+  // ---------- Bienvenida (primera vez) ----------
+
+  // Sugerencias para tocar en vez de escribir. Son ideas, no obligaciones: se puede escribir otra.
+  var RUBROS_SUGERIDOS = ['Harina', 'Huevos', 'Azúcar', 'Levadura', 'Materia prima', 'Envases', 'Gas', 'Nafta', 'Alquiler'];
+
+  var bien = { paso: 1, negocio: '', productos: [''], rubros: [], error: '' };
+
+  // Lo escrito se pasa al estado antes de redibujar o cambiar de paso, si no se perdería.
+  function leerBienvenida() {
+    if ($('#negocio')) bien.negocio = $('#negocio').value;
+    var campos = document.querySelectorAll('.producto-nombre');
+    if (campos.length) bien.productos = Array.prototype.map.call(campos, function (c) { return c.value; });
+  }
+
+  function pintarBienvenida() {
+    var h = ['<section class="tarjeta bien"><p class="sub">Paso ' + bien.paso + ' de 3</p>'];
+    if (bien.paso === 1) {
+      h.push('<h2>¡Hola! ¿Cómo se llama tu emprendimiento?</h2>',
+        '<div class="campo"><label for="negocio">Nombre (opcional)</label>',
+        '<input id="negocio" autocomplete="off" placeholder="Por ejemplo: La Esquina" value="' + esc(bien.negocio) + '"></div>',
+        '<p class="sub">Sale arriba en la app y en el resumen que mandás por WhatsApp.</p>');
+    } else if (bien.paso === 2) {
+      h.push('<h2>¿Qué vendés?</h2><p class="sub">Escribí cada producto. La app te va a decir cuánto te deja cada uno.</p>');
+      bien.productos.forEach(function (p, i) {
+        h.push('<div class="campo fila-producto-bien"><input class="producto-nombre" autocomplete="off" aria-label="Producto ' + (i + 1) + '"' +
+          ' placeholder="' + (i === 0 ? 'Por ejemplo: Pizzetas' : 'Otro producto') + '" value="' + esc(p) + '">' +
+          (bien.productos.length > 1 ? '<button type="button" data-act="bien-quitar-producto" data-i="' + i + '" aria-label="Quitar">✕</button>' : '') + '</div>');
+      });
+      h.push('<button type="button" class="boton" data-act="bien-otro-producto">+ Otro producto</button>');
+    } else {
+      var todos = RUBROS_SUGERIDOS.concat(bien.rubros.filter(function (r) { return RUBROS_SUGERIDOS.indexOf(r) < 0; }));
+      h.push('<h2>¿En qué gastás?</h2><p class="sub">Tocá los que uses. "Otros" ya viene incluido. Los gastos de todo el negocio van en "General".</p>',
+        '<div class="opciones">' + todos.map(function (r) {
+          return '<button type="button" data-act="bien-rubro" data-nombre="' + esc(r) + '" aria-pressed="' + (bien.rubros.indexOf(r) >= 0) + '">' + esc(r) + '</button>';
+        }).join('') + '</div>',
+        '<div class="campo" style="margin-top:14px"><label for="rubro-otro">¿Otro?</label>',
+        '<div class="fila-monto"><input id="rubro-otro" autocomplete="off" placeholder="Por ejemplo: Fletes">',
+        '<button type="button" data-act="bien-agregar-rubro" aria-label="Agregar">+</button></div></div>');
+    }
+    if (bien.error) h.push('<p class="error" role="alert">' + esc(bien.error) + '</p>');
+    h.push('<div class="botones">');
+    if (bien.paso > 1) h.push('<button type="button" class="boton" data-act="bien-atras">Atrás</button>');
+    h.push(bien.paso < 3 ? '<button type="button" class="boton primario" data-act="bien-siguiente">Siguiente</button>'
+      : '<button type="button" class="boton primario" data-act="bien-empezar">Empezar</button>');
+    h.push('</div><p class="sub">Todo se puede cambiar después en "Más".</p></section>');
+    return h.join('');
+  }
+
   // ---------- Pantallas y eventos ----------
 
   var PANTALLAS = { inicio: pintarInicio, insumos: pintarInsumos, mas: pintarMas };
 
   function pintar() {
+    var d = Store.datos(), nombre = d.negocio || 'Control de Gastos';
+    $('.barra h1').textContent = nombre;
+    document.title = nombre;
+    // Hasta completar la bienvenida no hay pestañas ni botones de anotar: no hay productos todavía.
+    document.body.classList.toggle('bienvenida', !d.configurado);
+    if (!d.configurado) { $('#vista').innerHTML = pintarBienvenida(); return; }
     var pantalla = PANTALLAS[estado.tab] || pintarInicio;
     $('#vista').innerHTML = pantalla();
     document.querySelectorAll('.pestanas button').forEach(function (b) {
@@ -480,6 +537,48 @@
       pintar(); avisar('Borrado');
     },
 
+    'nombrar-negocio': function () {
+      var n = pedirNombre('¿Cómo se llama tu emprendimiento? (podés dejarlo vacío)', Store.datos().negocio);
+      if (n === null) return;
+      var r = Store.nombrarNegocio(n);
+      if (!r.ok) return avisar(r.error, 4000);
+      pintar();
+    },
+
+    'bien-siguiente': function () {
+      leerBienvenida();
+      if (bien.paso === 2 && !bien.productos.some(function (p) { return p.trim(); })) {
+        bien.error = 'Escribí al menos un producto que vendas.';
+      } else { bien.error = ''; bien.paso++; }
+      pintar();
+    },
+    'bien-atras': function () { leerBienvenida(); bien.error = ''; bien.paso--; pintar(); },
+    'bien-otro-producto': function () {
+      leerBienvenida(); bien.productos.push(''); pintar();
+      var c = document.querySelectorAll('.producto-nombre'); c[c.length - 1].focus();
+    },
+    'bien-quitar-producto': function (el) { leerBienvenida(); bien.productos.splice(+el.getAttribute('data-i'), 1); pintar(); },
+    'bien-rubro': function (el) {
+      var n = el.getAttribute('data-nombre'), i = bien.rubros.indexOf(n);
+      if (i >= 0) bien.rubros.splice(i, 1); else bien.rubros.push(n);
+      pintar();
+    },
+    'bien-agregar-rubro': function () {
+      var n = $('#rubro-otro').value.trim();
+      if (n && bien.rubros.indexOf(n) < 0) bien.rubros.push(n);
+      pintar();
+    },
+    'bien-empezar': function () {
+      // Los rubros se guardan en el orden de la pantalla, no en el orden en que se tocaron.
+      var orden = RUBROS_SUGERIDOS.concat(bien.rubros);
+      var rubros = orden.filter(function (r, i) { return bien.rubros.indexOf(r) >= 0 && orden.indexOf(r) === i; });
+      var r = Store.configurar({ negocio: bien.negocio, productos: bien.productos, rubros: rubros });
+      if (!r.ok) { bien.error = r.error; return pintar(); }
+      estado.tab = 'inicio';
+      pintar();
+      avisar('¡Listo! Ya podés anotar');
+    },
+
     'guardar-copia': guardarCopia,
     'recuperar-copia': function () { $('#archivo-copia').click(); },
 
@@ -508,6 +607,7 @@
   // Enter en el monto guarda: es lo que se espera con el teclado numérico abierto.
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && e.target.id === 'monto') guardarForm();
+    if (e.key === 'Enter' && e.target.id === 'rubro-otro') ACCIONES['bien-agregar-rubro']();
   });
 
   // Para que las pantallas de "Insumos" y "Más" (y la calculadora) se sumen sin tocar lo de arriba.

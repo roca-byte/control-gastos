@@ -13,27 +13,65 @@ var Store = (function () {
   var storage = null;
   var d = null;
 
+  // Al instalarla no trae productos de nadie: la bienvenida pregunta el nombre del negocio, qué
+  // vende y en qué gasta. Así sirve igual para pizzetas que para un amigo que vende otra cosa.
   function fabrica() {
     return {
       version: VERSION,
+      configurado: false,
+      negocio: '',
       productos: [
-        { id: 'bidones', nombre: 'Bidones' },
-        { id: 'pizzetas', nombre: 'Pizzetas' },
         // General: gastos del negocio entero (el gas, por ejemplo). Fijo porque los totales
         // lo necesitan siempre y nunca lleva ventas.
         { id: 'general', nombre: 'General', fijo: true }
       ],
-      rubros: ['Harina', 'Huevos', 'Azúcar', 'Levadura', 'Envases', 'Gas', 'Otros'].map(function (n) {
-        return { id: idDe(n), nombre: n };
-      }),
+      rubros: [],
       movimientos: [],
-      insumos: [
-        { id: 'harina', nombre: 'Harina', presentacion: '1 kg', aperturas: [] },
-        { id: 'huevos', nombre: 'Huevos', presentacion: 'maple', aperturas: [] },
-        { id: 'azucar', nombre: 'Azúcar', presentacion: '1 kg', aperturas: [] }
-      ],
+      insumos: [],
       ultimaCopia: null
     };
+  }
+
+  // Datos guardados antes de que existiera la bienvenida: ya estaban en uso, no se pregunta nada.
+  function completar(x) {
+    if (x.configurado === undefined) x.configurado = true;
+    if (typeof x.negocio !== 'string') x.negocio = '';
+    return x;
+  }
+
+  // Lista de nombres sin vacíos ni repetidos (sin importar mayúsculas ni tildes).
+  function limpiarNombres(nombres) {
+    var vistos = {}, salida = [];
+    (nombres || []).forEach(function (n) {
+      var t = String(n || '').trim(), clave = t ? idDe(t) : '';
+      if (t && !vistos[clave]) { vistos[clave] = true; salida.push(t); }
+    });
+    return salida;
+  }
+
+  function configurar(o) {
+    if (d.configurado) return { ok: false, error: 'Ya está configurada: cambiá lo que necesites en "Más".' };
+    var productos = limpiarNombres(o.productos);
+    if (!productos.length) return { ok: false, error: 'Escribí al menos un producto que vendas.' };
+    var rubros = limpiarNombres(o.rubros);
+    // "Otros" siempre está: si no, un gasto raro no tendría dónde ir.
+    if (!rubros.some(function (r) { return idDe(r) === 'otros'; })) rubros.push('Otros');
+    var ok = cambiar(function () {
+      d.negocio = String(o.negocio || '').trim();
+      var lista = [];
+      productos.forEach(function (n) { lista.push({ id: idUnico(lista.concat([{ id: 'general' }]), n), nombre: n }); });
+      d.productos = lista.concat(d.productos.filter(function (p) { return p.id === 'general'; }));
+      var rs = [];
+      rubros.forEach(function (n) { rs.push({ id: idUnico(rs, n), nombre: n }); });
+      d.rubros = rs;
+      d.configurado = true;
+    });
+    return ok ? { ok: true } : { ok: false, error: SIN_LUGAR };
+  }
+
+  function nombrarNegocio(nombre) {
+    var ok = cambiar(function () { d.negocio = String(nombre || '').trim(); });
+    return ok ? { ok: true } : { ok: false, error: SIN_LUGAR };
   }
 
   // "Azúcar" → "azucar": un id legible ayuda a leer una copia de seguridad a mano si hace falta.
@@ -76,7 +114,7 @@ var Store = (function () {
     if (texto === null) { d = fabrica(); persistir(); return { aviso: null }; }
     var leido = null;
     try { leido = JSON.parse(texto); } catch (e) { leido = null; }
-    if (esValida(leido)) { d = leido; return { aviso: null }; }
+    if (esValida(leido)) { d = completar(leido); return { aviso: null }; }
     // Datos rotos: se guarda el texto aparte (por si se puede rescatar a mano) y se arranca
     // de cero en vez de dejar la app trabada.
     try { storage.setItem(CLAVE + '.danado', texto); } catch (e) { /* sin lugar: igual seguimos */ }
@@ -189,7 +227,7 @@ var Store = (function () {
     if (!esValida(x.datos)) return { ok: false, error: 'La copia está incompleta o dañada.' };
     try { storage.setItem(CLAVE + '.anterior', JSON.stringify(d)); } catch (e) { return { ok: false, error: SIN_LUGAR }; }
     var antes = d;
-    d = x.datos;
+    d = completar(x.datos);
     if (!persistir()) { d = antes; return { ok: false, error: SIN_LUGAR }; }
     return { ok: true };
   }
@@ -201,7 +239,7 @@ var Store = (function () {
   }
 
   return {
-    iniciar: iniciar, datos: datos, guardarMovimiento: guardarMovimiento, borrarMovimiento: borrarMovimiento,
+    iniciar: iniciar, datos: datos, configurar: configurar, nombrarNegocio: nombrarNegocio, guardarMovimiento: guardarMovimiento, borrarMovimiento: borrarMovimiento,
     agregar: agregar, renombrar: renombrar, borrar: borrar,
     abrirInsumo: abrirInsumo, deshacerApertura: deshacerApertura, borrarApertura: borrarApertura,
     exportarCopia: exportarCopia, restaurarCopia: restaurarCopia, necesitaCopia: necesitaCopia,

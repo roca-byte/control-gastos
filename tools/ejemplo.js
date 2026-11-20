@@ -41,6 +41,8 @@ function datos(hoy) {
   const abrir = (cada, veces) => Array.from({ length: veces }, (_, i) => Reglas.sumarDias(hoy, -cada * (veces - 1 - i) - 1));
   return {
     version: 1,
+    configurado: true,
+    negocio: 'La Esquina', // inventado
     productos: [{ id: 'bidones', nombre: 'Bidones' }, { id: 'pizzetas', nombre: 'Pizzetas' }, { id: 'general', nombre: 'General', fijo: true }],
     rubros: ['Harina', 'Huevos', 'Azúcar', 'Levadura', 'Envases', 'Gas', 'Otros'].map((nombre) => ({
       id: nombre.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''), nombre })),
