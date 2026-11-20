@@ -23,3 +23,8 @@ test('se puede seguir operando con el resultado y escribir número nuevo', () =>
   assert.equal(C.pantalla(run('2+3=9')), '9');
 });
 test('mientras se escribe muestra miles y coma', () => assert.equal(C.pantalla(run('1234,5')), '1.234,5'));
+test('= justo después de un operador y número nuevo da el número nuevo', () => {
+  assert.equal(C.pantalla(run('5×=3=')), '3');
+  assert.equal(C.pantalla(run('5−=3=')), '3');
+  assert.equal(C.pantalla(run('5×=')), '5');
+});

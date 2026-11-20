@@ -137,9 +137,8 @@ test('datos rotos: arranca vacío, guarda lo roto y avisa', () => {
 test('copia de seguridad ida y vuelta', () => {
   const s = falso(); Store.iniciar(s); listo();
   Store.guardarMovimiento(gasto());
-  const copia = Store.exportarCopia('2026-11-20');
+  const copia = Store.exportarCopia();
   assert.equal(JSON.parse(copia).app, 'control-gastos');
-  assert.equal(Store.datos().ultimaCopia, '2026-11-20');
   Store.iniciar(falso());
   assert.equal(Store.datos().movimientos.length, 0);
   Store.iniciar(s);
@@ -165,7 +164,7 @@ test('recordatorio de copia a los 30 días', () => {
   assert.equal(Store.necesitaCopia('2026-11-20'), false, 'sin movimientos no molesta');
   Store.guardarMovimiento(gasto());
   assert.equal(Store.necesitaCopia('2026-11-20'), true);
-  Store.exportarCopia('2026-11-10');
+  Store.marcarCopia('2026-11-10');
   assert.equal(Store.necesitaCopia('2026-11-20'), false);
   assert.equal(Store.necesitaCopia('2026-12-11'), true);
 });
@@ -181,8 +180,45 @@ test('si el celular no tiene lugar, avisa y no miente', () => {
 test('una copia sin "ultimaCopia" no rompe el recordatorio', () => {
   Store.iniciar(falso()); listo();
   Store.guardarMovimiento(gasto());
-  const d = JSON.parse(Store.exportarCopia('2026-11-20')).datos;
+  const d = JSON.parse(Store.exportarCopia()).datos;
   delete d.ultimaCopia;
   assert.equal(Store.restaurarCopia(JSON.stringify({ app: 'control-gastos', version: 1, datos: d })).ok, true);
   assert.equal(Store.necesitaCopia('2026-11-20'), true);
+});
+
+test('nombres con solo símbolos o emojis no se fusionan', () => {
+  Store.iniciar(falso());
+  assert.equal(Store.configurar({ negocio: '', productos: ['🍕', '🥤', '🍕'], rubros: ['¿?', '!!'] }).ok, true);
+  assert.deepEqual(Store.datos().productos.map(p => p.nombre), ['🍕', '🥤', 'General']);
+  assert.deepEqual(Store.datos().rubros.map(p => p.nombre), ['¿?', '!!', 'Otros']);
+  const ids = Store.datos().productos.map(p => p.id);
+  assert.equal(new Set(ids).size, ids.length);
+});
+
+test('la copia queda marcada recién cuando se guardó de verdad', () => {
+  Store.iniciar(falso()); listo();
+  Store.guardarMovimiento(gasto());
+  Store.exportarCopia();
+  assert.equal(Store.datos().ultimaCopia, null, 'armar el archivo no alcanza');
+  assert.equal(Store.marcarCopia('2026-11-20').ok, true);
+  assert.equal(Store.datos().ultimaCopia, '2026-11-20');
+});
+
+test('borrar avisa si no se pudo guardar', () => {
+  const s = falso(); Store.iniciar(s); listo();
+  const m = Store.guardarMovimiento(gasto()).mov;
+  Store.abrirInsumo('harina', '2026-11-20');
+  s.setItem = () => { throw new Error('QuotaExceededError'); };
+  assert.equal(Store.borrarMovimiento(m.id).ok, false);
+  assert.equal(Store.datos().movimientos.length, 1);
+  assert.equal(Store.deshacerApertura('harina').ok, false);
+  assert.equal(Store.borrarApertura('harina', '2026-11-20').ok, false);
+  assert.equal(Store.buscar('insumos', 'harina').aperturas.length, 1);
+});
+
+test('si el navegador bloquea el almacenamiento, arranca igual y avisa', () => {
+  const bloqueado = { getItem() { throw new Error('SecurityError'); }, setItem() { throw new Error('SecurityError'); }, removeItem() {} };
+  const r = Store.iniciar(bloqueado);
+  assert.match(r.aviso, /no deja guardar/);
+  assert.equal(Store.datos().configurado, false);
 });

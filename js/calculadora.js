@@ -44,6 +44,9 @@ var Calculadora = (function () {
     } else if (t === '⌫') {
       e.texto = e.texto.slice(0, -1);
     } else if (t === '=') {
+      // "5 × =" sin segundo número: se descarta la operación y queda el 5. Si no, la operación
+      // seguiría pendiente y el próximo número se calcularía contra nada.
+      if (e.texto === '') e.op = null;
       resolver(e); e.listo = !e.error;
     } else if ('+−×÷'.indexOf(t) >= 0) {
       e.listo = false;

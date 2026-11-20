@@ -30,7 +30,11 @@ const ARCHIVOS = [
 // INSTALL: se guarda todo el "kit" de la app. Si un solo archivo falla, no se instala (mejor eso
 // que una app a medias). skipWaiting = no esperar a que se cierre la versión vieja.
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(VERSION).then((c) => c.addAll(ARCHIVOS)).then(() => self.skipWaiting()));
+  // cache: 'reload' baja cada archivo del servidor y no de la caché del navegador: si no, una
+  // versión nueva podía quedar armada con archivos viejos (GitHub Pages los guarda ~10 minutos).
+  e.waitUntil(caches.open(VERSION)
+    .then((c) => c.addAll(ARCHIVOS.map((u) => new Request(u, { cache: 'reload' }))))
+    .then(() => self.skipWaiting()));
 });
 
 // ACTIVATE: borra las cachés de versiones anteriores y toma el control de las pestañas abiertas.

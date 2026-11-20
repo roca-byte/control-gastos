@@ -43,7 +43,10 @@ var Store = (function () {
   function limpiarNombres(nombres) {
     var vistos = {}, salida = [];
     (nombres || []).forEach(function (n) {
-      var t = String(n || '').trim(), clave = t ? idDe(t) : '';
+      // La comparación es por el nombre (sin mayúsculas ni tildes), no por el id: dos nombres
+      // hechos solo de emojis o símbolos darían el mismo id ("item") y uno se perdería.
+      var t = String(n || '').trim();
+      var clave = t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
       if (t && !vistos[clave]) { vistos[clave] = true; salida.push(t); }
     });
     return salida;
@@ -107,11 +110,30 @@ var Store = (function () {
       x.productos.some(function (p) { return p.id === 'general'; });
   }
 
+  // Almacenamiento en memoria: si el navegador no deja guardar (incógnito, datos bloqueados) la
+  // app igual funciona mientras esté abierta, y se avisa que al cerrarla se pierde todo.
+  function memoria() {
+    var m = {};
+    return {
+      getItem: function (k) { return k in m ? m[k] : null; },
+      setItem: function (k, v) { m[k] = String(v); },
+      removeItem: function (k) { delete m[k]; }
+    };
+  }
+  var BLOQUEADO = 'Este navegador no deja guardar datos (¿modo incógnito?): lo que anotes se pierde al cerrar la app.';
+
   function iniciar(s) {
-    storage = s || window.localStorage;
-    var texto = null;
-    try { texto = storage.getItem(CLAVE); } catch (e) { texto = null; }
-    if (texto === null) { d = fabrica(); persistir(); return { aviso: null }; }
+    // Leer window.localStorage ya puede tirar error si el navegador bloquea los datos del sitio.
+    try { storage = s || window.localStorage; } catch (e) { storage = null; }
+    var texto = null, bloqueado = !storage;
+    if (storage) { try { texto = storage.getItem(CLAVE); } catch (e) { bloqueado = true; } }
+    if (bloqueado) { storage = memoria(); d = fabrica(); persistir(); return { aviso: BLOQUEADO }; }
+    if (texto === null) {
+      d = fabrica();
+      if (persistir()) return { aviso: null };
+      storage = memoria(); persistir();
+      return { aviso: BLOQUEADO };
+    }
     var leido = null;
     try { leido = JSON.parse(texto); } catch (e) { leido = null; }
     if (esValida(leido)) { d = completar(leido); return { aviso: null }; }
@@ -156,8 +178,10 @@ var Store = (function () {
     return ok ? { ok: true, mov: mov } : { ok: false, error: SIN_LUGAR };
   }
 
+  function resultado(ok) { return ok ? { ok: true } : { ok: false, error: SIN_LUGAR }; }
+
   function borrarMovimiento(id) {
-    cambiar(function () { d.movimientos = d.movimientos.filter(function (x) { return x.id !== id; }); });
+    return resultado(cambiar(function () { d.movimientos = d.movimientos.filter(function (x) { return x.id !== id; }); }));
   }
 
   function agregar(lista, campos) {
@@ -203,20 +227,25 @@ var Store = (function () {
 
   function deshacerApertura(id) {
     var ins = buscar('insumos', id);
-    if (!ins || !ins.aperturas.length) return;
+    if (!ins || !ins.aperturas.length) return { ok: true };
     var ultima = ins.aperturas.slice().sort().pop();
-    borrarApertura(id, ultima);
+    return borrarApertura(id, ultima);
   }
 
   function borrarApertura(id, fecha) {
     var ins = buscar('insumos', id);
-    if (!ins) return;
-    cambiar(function () { ins.aperturas = ins.aperturas.filter(function (f) { return f !== fecha; }); });
+    if (!ins) return { ok: true };
+    return resultado(cambiar(function () { ins.aperturas = ins.aperturas.filter(function (f) { return f !== fecha; }); }));
   }
 
-  function exportarCopia(fecha) {
-    cambiar(function () { d.ultimaCopia = fecha || R.hoy(); });
+  // Armar el archivo no es lo mismo que guardarlo: si se cierra el "compartir" sin elegir nada,
+  // no hay copia. Por eso la fecha se marca aparte, cuando la pantalla sabe que se guardó.
+  function exportarCopia() {
     return JSON.stringify({ app: APP, version: VERSION, datos: d }, null, 1);
+  }
+
+  function marcarCopia(fecha) {
+    return resultado(cambiar(function () { d.ultimaCopia = fecha || R.hoy(); }));
   }
 
   function restaurarCopia(texto) {
@@ -242,7 +271,7 @@ var Store = (function () {
     iniciar: iniciar, datos: datos, configurar: configurar, nombrarNegocio: nombrarNegocio, guardarMovimiento: guardarMovimiento, borrarMovimiento: borrarMovimiento,
     agregar: agregar, renombrar: renombrar, borrar: borrar,
     abrirInsumo: abrirInsumo, deshacerApertura: deshacerApertura, borrarApertura: borrarApertura,
-    exportarCopia: exportarCopia, restaurarCopia: restaurarCopia, necesitaCopia: necesitaCopia,
+    exportarCopia: exportarCopia, marcarCopia: marcarCopia, restaurarCopia: restaurarCopia, necesitaCopia: necesitaCopia,
     buscar: buscar
   };
 })();

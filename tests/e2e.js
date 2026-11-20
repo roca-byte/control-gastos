@@ -16,12 +16,14 @@ const TIPOS = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/cs
 // y el service worker se prueben como en el celular.
 function servidor() {
   return http.createServer((req, res) => {
-    let p = decodeURIComponent(req.url.split('?')[0]);
+    let p;
+    try { p = decodeURIComponent(req.url.split('?')[0]); } catch (e) { res.writeHead(400); return res.end(); }
     if (!p.startsWith('/control-gastos/')) { res.writeHead(404); return res.end(); }
     p = p.slice('/control-gastos'.length);
     if (p.endsWith('/')) p += 'index.html';
     const archivo = path.join(RAIZ, p);
-    if (!archivo.startsWith(RAIZ) || !fs.existsSync(archivo) || fs.statSync(archivo).isDirectory()) { res.writeHead(404); return res.end(); }
+    // RAIZ + separador: si no, una carpeta vecina como 'control-gastos-viejo' también pasaría.
+    if (!archivo.startsWith(RAIZ + path.sep) || !fs.existsSync(archivo) || fs.statSync(archivo).isDirectory()) { res.writeHead(404); return res.end(); }
     res.writeHead(200, { 'Content-Type': TIPOS[path.extname(archivo)] || 'application/octet-stream' });
     fs.createReadStream(archivo).pipe(res);
   });
@@ -253,6 +255,30 @@ escenario('el nombre del negocio se cambia en Más y sale en el resumen', async 
   assert.equal(await texto(page, '.barra h1'), 'Bidones Juan');
   await page.click('[data-act="compartir"]');
   assert.match(await page.evaluate(() => navigator.clipboard.readText()), /^Bidones Juan\nResumen semana/);
+});
+
+escenario('si se cierra "compartir" sin elegir nada, la copia no cuenta como guardada', async (page) => {
+  await page.evaluate(() => {
+    navigator.canShare = () => true;
+    navigator.share = () => Promise.reject(new Error('AbortError'));
+  });
+  await anotar(page, 'venta', { monto: '700', producto: 'bidones' });
+  await page.click('[data-act="tab"][data-tab="mas"]');
+  await page.click('[data-act="guardar-copia"]');
+  await page.waitForSelector('#aviso:not(.oculto)');
+  assert.match(await texto(page, '#aviso'), /No se guardó/);
+  assert.equal(await page.evaluate(() => Store.datos().ultimaCopia), null);
+});
+
+escenario('un resultado de la calculadora que no sirve avisa y no toca el monto', async (page) => {
+  await page.click('[data-act="nuevo"][data-tipo="gasto"]');
+  await page.fill('#monto', '500');
+  await page.click('#hoja [data-act="calc"]');
+  for (const t of '100−300=') await page.click(`#hoja [data-tecla="${t}"]`);
+  await page.click('#hoja [data-act="usar-calc"]');
+  assert.match(await texto(page, '#aviso'), /mayor a 0/);
+  await page.click('#hoja [data-act="volver-form"]');
+  assert.equal(await page.inputValue('#monto'), '500');
 });
 
 (async () => {

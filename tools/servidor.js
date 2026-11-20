@@ -11,12 +11,14 @@ const TIPOS = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/cs
 
 function servidor() {
   return http.createServer((req, res) => {
-    let p = decodeURIComponent(req.url.split('?')[0]);
+    let p;
+    try { p = decodeURIComponent(req.url.split('?')[0]); } catch (e) { res.writeHead(400); return res.end(); }
     if (!p.startsWith('/control-gastos/')) { res.writeHead(404); return res.end(); }
     p = p.slice('/control-gastos'.length);
     if (p.endsWith('/')) p += 'index.html';
     const archivo = path.join(RAIZ, p);
-    if (!archivo.startsWith(RAIZ) || !fs.existsSync(archivo) || fs.statSync(archivo).isDirectory()) { res.writeHead(404); return res.end(); }
+    // RAIZ + separador: si no, una carpeta vecina como 'control-gastos-viejo' también pasaría.
+    if (!archivo.startsWith(RAIZ + path.sep) || !fs.existsSync(archivo) || fs.statSync(archivo).isDirectory()) { res.writeHead(404); return res.end(); }
     res.writeHead(200, { 'Content-Type': TIPOS[path.extname(archivo)] || 'application/octet-stream' });
     fs.createReadStream(archivo).pipe(res);
   });

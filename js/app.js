@@ -284,7 +284,9 @@
   // si el celular ya bajó la última actualización.
   if (window.caches && caches.keys) {
     caches.keys().then(function (ks) {
-      var k = ks.filter(function (x) { return /^control-gastos-v\d+$/.test(x); }).sort().pop();
+      // Se ordena por el número: como texto, "v10" quedaría antes que "v9".
+      var num = function (x) { return +x.split('-v')[1]; };
+      var k = ks.filter(function (x) { return /^control-gastos-v\d+$/.test(x); }).sort(function (a, b) { return num(a) - num(b); }).pop();
       if (k) { versionApp = 'Control de Gastos · versión ' + k.split('-v')[1]; if (estado.tab === 'mas') pintar(); }
     }).catch(function () {});
   }
@@ -328,7 +330,11 @@
     try { archivo = new File([texto], nombre, { type: 'application/json' }); } catch (e) { archivo = null; }
     // En el celular se ofrece compartir el archivo (WhatsApp, Drive, mail…); si no, se descarga.
     if (archivo && navigator.canShare && navigator.share && navigator.canShare({ files: [archivo] })) {
-      navigator.share({ files: [archivo], title: 'Copia de Control de Gastos' }).catch(function () {});
+      // Recién cuando eligió dónde mandarla cuenta como guardada; si cerró sin elegir, no.
+      navigator.share({ files: [archivo], title: 'Copia de Control de Gastos' }).then(function () {
+        Store.marcarCopia(); pintar(); avisar('Copia guardada');
+      }, function () { avisar('No se guardó la copia'); });
+      return;
     } else {
       var url = URL.createObjectURL(new Blob([texto], { type: 'application/json' }));
       var a = document.createElement('a');
@@ -336,8 +342,9 @@
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
     }
+    Store.marcarCopia();
     pintar();
-    avisar('Copia guardada');
+    avisar('Copia guardada en Descargas');
   }
 
   function recuperarCopia(input) {
@@ -482,7 +489,8 @@
     guardar: guardarForm,
     'borrar-mov': function () {
       if (!confirm('¿Borrar este movimiento? No se puede deshacer.')) return;
-      Store.borrarMovimiento(estado.form.id);
+      var r = Store.borrarMovimiento(estado.form.id);
+      if (!r.ok) return avisar(r.error, 4000);
       cerrarHoja(); pintar(); avisar('Borrado');
     },
     cerrar: cerrarHoja,
@@ -497,10 +505,16 @@
       // Pasados los 10 s se redibuja para que desaparezca "Deshacer".
       setTimeout(function () { if (estado.tab === 'insumos' && !estado.form && !estado.calc) pintar(); }, 10500);
     },
-    'deshacer-apertura': function (el) { Store.deshacerApertura(el.getAttribute('data-id')); ultimoAbierto = null; pintar(); avisar('Deshecho'); },
+    'deshacer-apertura': function (el) {
+      var r = Store.deshacerApertura(el.getAttribute('data-id'));
+      if (!r.ok) return avisar(r.error, 4000);
+      ultimoAbierto = null; pintar(); avisar('Deshecho');
+    },
     'borrar-apertura': function (el) {
       if (!confirm('¿Borrar esa fecha del historial?')) return;
-      Store.borrarApertura(el.getAttribute('data-id'), el.getAttribute('data-fecha')); pintar();
+      var r = Store.borrarApertura(el.getAttribute('data-id'), el.getAttribute('data-fecha'));
+      if (!r.ok) return avisar(r.error, 4000);
+      pintar();
     },
     'nuevo-insumo': function () {
       var nombre = pedirNombre('¿Cómo se llama el insumo? (por ejemplo: Levadura)');
@@ -587,8 +601,11 @@
     'volver-form': function () { estado.calc = null; pintarHoja(); },
     'usar-calc': function () {
       var v = Calculadora.valor(estado.calc.e);
+      // El monto se guarda en pesos enteros y tiene que ser más que cero: si el resultado no
+      // sirve se avisa y se queda en la calculadora, en vez de volver con el monto sin cambiar.
+      if (v === null || Math.round(v) <= 0) return avisar('El resultado tiene que ser mayor a 0', 3000);
       estado.calc = null;
-      if (v !== null && v > 0) estado.form.monto = String(Math.round(v));
+      estado.form.monto = String(Math.round(v));
       pintarHoja();
     }
   };
