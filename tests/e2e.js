@@ -185,6 +185,29 @@ escenario('la versión se ve al pie de Más', async (page) => {
   assert.match(await texto(page, '.version'), /Control de Gastos/);
 });
 
+escenarios.push({ nombre: 'abre sin conexión con los datos y muestra la versión', conSW: true, fn: async (page, context, url) => {
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await page.reload();
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await anotar(page, 'venta', { monto: '900', producto: 'bidones' });
+  await context.setOffline(true);
+  await page.reload();
+  assert.equal(await texto(page, '#t-recaudado'), '$ 900');
+  await page.click('[data-act="tab"][data-tab="mas"]');
+  await page.waitForFunction(() => /versión \d+/.test(document.querySelector('.version').textContent));
+  const v = fs.readFileSync(path.join(RAIZ, 'sw.js'), 'utf8').match(/control-gastos-v(\d+)/)[1];
+  assert.match(await texto(page, '.version'), new RegExp('versión ' + v + '$'));
+  await context.setOffline(false);
+} });
+
+escenario('el manifest y los íconos existen', async (page, context, url) => {
+  const m = await (await page.request.get(url + 'manifest.json')).json();
+  assert.equal(m.start_url, './');
+  for (const i of m.icons) assert.equal((await page.request.get(url + i.src)).status(), 200, i.src);
+  const sw = fs.readFileSync(path.join(RAIZ, 'sw.js'), 'utf8');
+  for (const a of sw.match(/'\.\/[^']*'/g)) assert.equal((await page.request.get(url + a.slice(3, -1))).status(), 200, a);
+});
+
 (async () => {
   const filtro = process.argv[2];
   const srv = servidor().listen(0);

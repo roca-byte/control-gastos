@@ -518,4 +518,9 @@
   var inicio = Store.iniciar(window.localStorage);
   pintar();
   if (inicio.aviso) avisar(inicio.aviso, 8000);
+
+  // Service worker: guarda la app en el celular para que abra sin señal. Con file:// no existe.
+  if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+    navigator.serviceWorker.register('./sw.js').catch(function () {});
+  }
 })();
