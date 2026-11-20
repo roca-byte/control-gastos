@@ -79,10 +79,58 @@ var Reglas = (function () {
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
+  function enRango(m, r) { return m.fecha >= r.desde && m.fecha <= r.hasta; }
+
+  // Ganancia de un producto = lo vendido menos lo gastado EN ESE producto. "General" (el gas,
+  // por ejemplo) entra igual que cualquier otro en el total del negocio, pero no se reparte:
+  // repartirlo a ojo daría una ganancia por producto que no es real.
+  function totales(movs, r) {
+    var t = { recaudado: 0, gastado: 0, quedo: 0, porProducto: {} };
+    movs.forEach(function (m) {
+      if (!enRango(m, r)) return;
+      var p = t.porProducto[m.productoId] ||
+        (t.porProducto[m.productoId] = { vendido: 0, gastado: 0, ganancia: 0, cantidad: 0, porRubro: {} });
+      if (m.tipo === 'venta') {
+        t.recaudado += m.monto; p.vendido += m.monto; p.cantidad += m.cantidad || 0;
+      } else {
+        t.gastado += m.monto; p.gastado += m.monto;
+        p.porRubro[m.rubroId] = (p.porRubro[m.rubroId] || 0) + m.monto;
+      }
+      p.ganancia = p.vendido - p.gastado;
+    });
+    t.quedo = t.recaudado - t.gastado;
+    return t;
+  }
+
+  function puntoSerie(movs, r) {
+    var t = totales(movs, r);
+    return { desde: r.desde, hasta: r.hasta, recaudado: t.recaudado, gastado: t.gastado };
+  }
+
+  function serieSemanas(movs, fechaRef, n) {
+    var lunes = rangoSemana(fechaRef).desde, serie = [];
+    for (var i = n - 1; i >= 0; i--) serie.push(puntoSerie(movs, rangoSemana(sumarDias(lunes, -7 * i))));
+    return serie;
+  }
+
+  function serieMeses(movs, fechaRef, n) {
+    var f = partes(fechaRef), serie = [];
+    for (var i = n - 1; i >= 0; i--) serie.push(puntoSerie(movs, rangoMes(deUTC(Date.UTC(f.a, f.m - i, 1)))));
+    return serie;
+  }
+
+  function movimientosDe(movs, r) {
+    return movs.filter(function (m) { return enRango(m, r); }).sort(function (a, b) {
+      if (a.fecha !== b.fecha) return a.fecha < b.fecha ? 1 : -1;
+      return b.creado - a.creado;
+    });
+  }
+
   return {
     fechaLocal: fechaLocal, hoy: hoy, sumarDias: sumarDias, diasEntre: diasEntre,
     rangoSemana: rangoSemana, rangoMes: rangoMes, etiquetaRango: etiquetaRango,
     formatoPesos: formatoPesos, leerMonto: leerMonto, esc: esc,
+    totales: totales, serieSemanas: serieSemanas, serieMeses: serieMeses, movimientosDe: movimientosDe,
     MESES: MESES, MESES_CORTOS: MESES_CORTOS
   };
 })();

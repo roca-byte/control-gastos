@@ -42,3 +42,48 @@ test('montos como los escribe una persona', () => {
 test('escapar', () => {
   assert.equal(R.esc('<b>"a"&\'b\'</b>'), '&lt;b&gt;&quot;a&quot;&amp;&#39;b&#39;&lt;/b&gt;');
 });
+
+const M = [
+  { id: '1', tipo: 'venta', fecha: '2026-11-16', monto: 30000, productoId: 'bidones', cantidad: 10, nota: '', creado: 1 },
+  { id: '2', tipo: 'gasto', fecha: '2026-11-17', monto: 12000, productoId: 'bidones', rubroId: 'envases', nota: '', creado: 2 },
+  { id: '3', tipo: 'venta', fecha: '2026-11-18', monto: 18000, productoId: 'pizzetas', nota: '', creado: 3 },
+  { id: '4', tipo: 'gasto', fecha: '2026-11-18', monto: 6000, productoId: 'pizzetas', rubroId: 'harina', nota: '', creado: 4 },
+  { id: '5', tipo: 'gasto', fecha: '2026-11-19', monto: 3500, productoId: 'pizzetas', rubroId: 'huevos', nota: '', creado: 5 },
+  { id: '6', tipo: 'gasto', fecha: '2026-11-22', monto: 2000, productoId: 'general', rubroId: 'gas', nota: '', creado: 6 },
+  { id: '7', tipo: 'venta', fecha: '2026-11-23', monto: 999, productoId: 'bidones', nota: '', creado: 7 },
+];
+
+test('totales de la semana, por producto, General solo en el total', () => {
+  const t = R.totales(M, R.rangoSemana('2026-11-20'));
+  assert.equal(t.recaudado, 48000); assert.equal(t.gastado, 23500); assert.equal(t.quedo, 24500);
+  assert.deepEqual(t.porProducto.bidones, { vendido: 30000, gastado: 12000, ganancia: 18000, cantidad: 10, porRubro: { envases: 12000 } });
+  assert.equal(t.porProducto.pizzetas.ganancia, 8500);
+  assert.deepEqual(t.porProducto.pizzetas.porRubro, { harina: 6000, huevos: 3500 });
+  assert.equal(t.porProducto.general.gastado, 2000);
+  assert.equal(t.porProducto.general.vendido, 0);
+});
+
+test('período vacío da ceros', () => {
+  assert.deepEqual(R.totales(M, R.rangoSemana('2026-10-01')), { recaudado: 0, gastado: 0, quedo: 0, porProducto: {} });
+});
+
+test('serie de semanas, de la más vieja a la actual', () => {
+  const s = R.serieSemanas(M, '2026-11-23', 2);
+  assert.deepEqual(s.map(x => x.desde), ['2026-11-16', '2026-11-23']);
+  assert.equal(s[0].recaudado, 48000); assert.equal(s[0].gastado, 23500); assert.equal(s[1].recaudado, 999);
+});
+
+test('serie de meses cruzando año', () => {
+  assert.deepEqual(R.serieMeses([], '2027-01-15', 3).map(x => x.desde), ['2026-11-01', '2026-12-01', '2027-01-01']);
+});
+
+test('movimiento del domingo 3-ene cuenta en la semana del 28-dic y en enero', () => {
+  const m = [{ id: 'a', tipo: 'venta', fecha: '2027-01-03', monto: 100, productoId: 'bidones', nota: '', creado: 1 }];
+  assert.equal(R.totales(m, R.rangoSemana('2026-12-28')).recaudado, 100);
+  assert.equal(R.totales(m, R.rangoMes('2027-01-03')).recaudado, 100);
+  assert.equal(R.totales(m, R.rangoMes('2026-12-28')).recaudado, 0);
+});
+
+test('lista del período ordenada, la más nueva arriba', () => {
+  assert.deepEqual(R.movimientosDe(M, R.rangoSemana('2026-11-20')).map(x => x.id), ['6', '5', '4', '3', '2', '1']);
+});
