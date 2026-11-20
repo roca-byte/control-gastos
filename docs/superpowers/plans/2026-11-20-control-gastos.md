@@ -356,3 +356,24 @@ Más: Calculadora (desde el formulario muestra "Usar este número", que pone `Ca
 - [ ] **Step 1: Escenario e2e que falla:** servir la carpeta bajo `/control-gastos/` (servir el directorio padre con un enlace simbólico), cargar, esperar al SW, cortar la red (`context.setOffline(true)`), recargar → la app abre y muestra los datos; el pie muestra `v1`.
 - [ ] **Step 2–4:** correr (FAIL), implementar, correr `node tests/e2e.js` y `node --test tests/` (PASS). Correr `node tools/demo.js` y revisar que las capturas y la guía coincidan con lo que hace la app.
 - [ ] **Step 5: Commit** — `"PWA instalable sin conexión, guía de uso y de publicación"`
+
+### Task 10: Video de demostración
+
+**Files:**
+- Create: `tools/video.js`, `tools/servidor.js` (si Task 9 no lo creó), `docs/video/control-gastos-demo.mp4`
+- Modify: `README.md` (enlace al video), `DESARROLLO.md` (cómo regenerarlo)
+
+Mismo esquema que `../mash-check/tools/video.js`: Playwright en un celular de 390×844 con los datos
+inventados de `tools/ejemplo.js`, carteles arriba que explican cada paso (en voseo, sin jerga), un
+círculo en cada toque, placas de apertura y cierre, cuadros capturados y unidos con `ffmpeg` (H.264,
+`yuv420p`, para que se vea en WhatsApp). Recorrido: anotar un gasto de harina y una venta de
+pizzetas → ver cómo va la semana y la ganancia por producto → gráfico y cambio a Mes → "Abrí uno
+nuevo" en Harina → calculadora pasando el resultado al monto → compartir resumen (visor tipo
+burbuja de WhatsApp con el texto) → guardar copia de seguridad → abrir sin conexión.
+Sin ningún nombre ni marca de QualityOS ni datos reales.
+
+- [ ] **Step 1:** `node tools/video.js` genera `docs/video/control-gastos-demo.mp4`; verificar con
+  `ffprobe` que dura entre 40 s y 120 s, mide 390×844 (o múltiplo par) y es `h264`.
+- [ ] **Step 2:** mirar varios cuadros (`ffmpeg -ss … -frames:v 1`) y comprobar que los carteles
+  coinciden con lo que se ve.
+- [ ] **Step 3: Commit** — `"Video de demostración"`
