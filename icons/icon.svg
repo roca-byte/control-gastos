@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Fondo azul a sangre (sirve como ícono "maskable": lo importante queda en el centro). -->
+  <rect width="512" height="512" fill="#1d3fd8"/>
+  <!-- Barras: verde = lo que entra, coral = lo que sale. -->
+  <rect x="136" y="250" width="58" height="130" rx="8" fill="#ff6b4a"/>
+  <rect x="206" y="190" width="58" height="190" rx="8" fill="#17b26a"/>
+  <rect x="276" y="280" width="58" height="100" rx="8" fill="#ff6b4a"/>
+  <rect x="346" y="150" width="58" height="230" rx="8" fill="#17b26a"/>
+  <rect x="116" y="388" width="308" height="12" rx="6" fill="#ffd23f"/>
+  <text x="176" y="200" font-family="Arial, sans-serif" font-weight="800" font-size="110" fill="#ffd23f" text-anchor="middle">$</text>
+</svg>

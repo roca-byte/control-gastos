@@ -220,3 +220,11 @@ GUIA-PUBLICACION.md  cómo publicarla en GitHub Pages
 - Estilo visual concreto (colores, tipografía), respetando contraste y botones grandes.
 - Ícono de la app.
 - Detalle de la animación/hoja inferior y de los mensajes vacíos.
+
+## 11. Cambios después de aprobado (pedidos por el usuario)
+
+- Colores llamativos propios (azul eléctrico `#1d3fd8` + amarillo `#ffd23f`), nada de QualityOS.
+- **Bienvenida la primera vez** (para usarla en otros emprendimientos o pasársela a un amigo): pregunta
+  nombre del emprendimiento (opcional), productos (al menos uno) y tipos de gasto (sugerencias + propios;
+  "Otros" siempre). Arranca sin productos de ejemplo y sin insumos. El nombre sale en la barra y en la
+  primera línea del resumen, y se cambia en Más. Datos anteriores a la bienvenida se toman como configurados.

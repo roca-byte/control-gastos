@@ -23,6 +23,7 @@
 - localStorage clave `controlGastos.v1`; copia anterior en `controlGastos.v1.anterior`.
 - `sw.js` con `VERSION = 'control-gastos-vN'`; **cada cambio en un archivo de la app sube N**; archivo nuevo → sumarlo a `ARCHIVOS`.
 - Comentarios en español que explican el porqué.
+- App independiente y pública (MIT, `LICENSE` ya en el repo). **No** es parte de la suite QualityOS: ni su nombre ni su marca en la app ni en las guías.
 - Semana de lunes a domingo. Duración de insumo = promedio de los intervalos entre las últimas 4 aperturas.
 - "General" es un producto fijo: solo gastos, nunca ventas, no se reparte, no se puede borrar ni renombrar.
 
@@ -347,7 +348,7 @@ Más: Calculadora (desde el formulario muestra "Usar este número", que pone `Ca
 ### Task 9: PWA, publicación y guías
 
 **Files:**
-- Create: `sw.js`, `manifest.json`, `icons/icon.svg`, `icons/icon-192.png`, `icons/icon-512.png`, `GUIA-PUBLICACION.md`, `docs/GUIA.md`, `docs/img/*`, `tools/demo.js`, `tools/ejemplo.js`, `README.md`, `CLAUDE.md`, `LICENSE` (MIT), `.gitignore`
+- Create: `sw.js`, `manifest.json`, `icons/icon.svg`, `icons/icon-192.png`, `icons/icon-512.png`, `GUIA-PUBLICACION.md`, `docs/GUIA.md`, `docs/img/*`, `tools/demo.js`, `tools/ejemplo.js`, `README.md`, `CLAUDE.md`, `.gitignore`
 - Modify: `index.html` (link al manifest, registro del SW), `tests/e2e.js`
 
 `sw.js`: mismo esquema que `mash-check` (red primero con `cache:'no-cache'`, caché si no hay señal, `VERSION = 'control-gastos-v1'`, `ARCHIVOS` con todas las rutas relativas, borrar cachés viejas en `activate`). `manifest.json`: `name`/`short_name` "Control de Gastos", `lang` es-AR, `start_url`/`scope` `./`, `display` standalone, íconos 192/512 + maskable. Íconos PNG generados desde el SVG con Playwright (screenshot). `tools/demo.js` carga `tools/ejemplo.js` (datos inventados) y saca capturas a `docs/img/`; `docs/GUIA.md` es la guía para quien usa la app, en voseo, sin jerga, con esas capturas. `GUIA-PUBLICACION.md`: crear el repo `control-gastos`, subir archivos desde la web de GitHub, activar Pages, instalar en el celular, actualizar (subir `sw.js` siempre). `CLAUDE.md`: reglas de la sección Global Constraints + comandos de prueba.
@@ -355,3 +356,24 @@ Más: Calculadora (desde el formulario muestra "Usar este número", que pone `Ca
 - [ ] **Step 1: Escenario e2e que falla:** servir la carpeta bajo `/control-gastos/` (servir el directorio padre con un enlace simbólico), cargar, esperar al SW, cortar la red (`context.setOffline(true)`), recargar → la app abre y muestra los datos; el pie muestra `v1`.
 - [ ] **Step 2–4:** correr (FAIL), implementar, correr `node tests/e2e.js` y `node --test tests/` (PASS). Correr `node tools/demo.js` y revisar que las capturas y la guía coincidan con lo que hace la app.
 - [ ] **Step 5: Commit** — `"PWA instalable sin conexión, guía de uso y de publicación"`
+
+### Task 10: Video de demostración
+
+**Files:**
+- Create: `tools/video.js`, `tools/servidor.js` (si Task 9 no lo creó), `docs/video/control-gastos-demo.mp4`
+- Modify: `README.md` (enlace al video), `DESARROLLO.md` (cómo regenerarlo)
+
+Mismo esquema que `../mash-check/tools/video.js`: Playwright en un celular de 390×844 con los datos
+inventados de `tools/ejemplo.js`, carteles arriba que explican cada paso (en voseo, sin jerga), un
+círculo en cada toque, placas de apertura y cierre, cuadros capturados y unidos con `ffmpeg` (H.264,
+`yuv420p`, para que se vea en WhatsApp). Recorrido: anotar un gasto de harina y una venta de
+pizzetas → ver cómo va la semana y la ganancia por producto → gráfico y cambio a Mes → "Abrí uno
+nuevo" en Harina → calculadora pasando el resultado al monto → compartir resumen (visor tipo
+burbuja de WhatsApp con el texto) → guardar copia de seguridad → abrir sin conexión.
+Sin ningún nombre ni marca de QualityOS ni datos reales.
+
+- [ ] **Step 1:** `node tools/video.js` genera `docs/video/control-gastos-demo.mp4`; verificar con
+  `ffprobe` que dura entre 40 s y 120 s, mide 390×844 (o múltiplo par) y es `h264`.
+- [ ] **Step 2:** mirar varios cuadros (`ffmpeg -ss … -frames:v 1`) y comprobar que los carteles
+  coinciden con lo que se ve.
+- [ ] **Step 3: Commit** — `"Video de demostración"`
