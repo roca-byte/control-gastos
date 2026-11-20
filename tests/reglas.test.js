@@ -87,3 +87,17 @@ test('movimiento del domingo 3-ene cuenta en la semana del 28-dic y en enero', (
 test('lista del período ordenada, la más nueva arriba', () => {
   assert.deepEqual(R.movimientosDe(M, R.rangoSemana('2026-11-20')).map(x => x.id), ['6', '5', '4', '3', '2', '1']);
 });
+
+test('duración de insumos', () => {
+  assert.equal(R.duracionInsumo([], '2026-11-20'), null);
+  assert.equal(R.duracionInsumo(['2026-11-16'], '2026-11-20'), null);
+  assert.deepEqual(R.duracionInsumo(['2026-11-12', '2026-11-16'], '2026-11-18'),
+    { dias: 4, abierto: '2026-11-16', terminaria: '2026-11-20', atrasado: false });
+  // solo cuentan las últimas 4 aperturas: el intervalo viejo de 30 días no pesa
+  const a = ['2026-09-01', '2026-10-01', '2026-10-05', '2026-10-08', '2026-10-13'];
+  assert.equal(R.duracionInsumo(a, '2026-10-14').dias, 4); // (4+3+5)/3
+  assert.equal(R.duracionInsumo(['2026-11-16', '2026-11-12'], '2026-11-21').atrasado, true);
+  assert.equal(R.duracionInsumo(['2026-11-16', '2026-11-12'], '2026-11-20').atrasado, false);
+  const orig = ['2026-11-16', '2026-11-12']; R.duracionInsumo(orig, '2026-11-20');
+  assert.deepEqual(orig, ['2026-11-16', '2026-11-12'], 'no reordena el arreglo guardado');
+});

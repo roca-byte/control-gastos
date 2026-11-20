@@ -126,7 +126,19 @@ var Reglas = (function () {
     });
   }
 
+  // Cuánto dura un insumo: promedio de días entre las últimas 4 veces que se abrió uno nuevo.
+  // Se miran solo las últimas para que la estimación siga el ritmo de venta actual y no lo que
+  // pasaba hace meses. Con una sola apertura todavía no hay con qué comparar.
+  function duracionInsumo(aperturas, hoyF) {
+    var a = aperturas.slice().sort().slice(-4);
+    if (a.length < 2) return null;
+    var dias = Math.max(1, Math.round(diasEntre(a[0], a[a.length - 1]) / (a.length - 1)));
+    var abierto = a[a.length - 1], terminaria = sumarDias(abierto, dias);
+    return { dias: dias, abierto: abierto, terminaria: terminaria, atrasado: hoyF > terminaria };
+  }
+
   return {
+    duracionInsumo: duracionInsumo,
     fechaLocal: fechaLocal, hoy: hoy, sumarDias: sumarDias, diasEntre: diasEntre,
     rangoSemana: rangoSemana, rangoMes: rangoMes, etiquetaRango: etiquetaRango,
     formatoPesos: formatoPesos, leerMonto: leerMonto, esc: esc,
