@@ -4,6 +4,7 @@ Esta app sirve para anotar lo que gastás y lo que cobrás en el emprendimiento,
 deja cada producto**. Todo queda guardado en tu celular: no hace falta cuenta ni internet.
 
 > Los números de las capturas son inventados, de ejemplo.
+> Hay un [video de un minuto](video/control-gastos-demo.mp4) que muestra todo esto.
 
 ## 1. La pantalla de Inicio
 

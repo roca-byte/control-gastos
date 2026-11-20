@@ -12,6 +12,7 @@ App para el celular que anota los **gastos y ventas** de un emprendimiento chico
 
 <img src="docs/img/01-inicio.png" width="260" alt="Pantalla de inicio">
 
+- **Video de demostración (1 minuto):** [docs/video/control-gastos-demo.mp4](docs/video/control-gastos-demo.mp4)
 - **Cómo se usa:** [docs/GUIA.md](docs/GUIA.md)
 - **Cómo publicarla e instalarla:** [GUIA-PUBLICACION.md](GUIA-PUBLICACION.md)
 - **Para programar:** [DESARROLLO.md](DESARROLLO.md)
