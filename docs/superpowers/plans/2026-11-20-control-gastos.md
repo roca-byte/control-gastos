@@ -23,6 +23,7 @@
 - localStorage clave `controlGastos.v1`; copia anterior en `controlGastos.v1.anterior`.
 - `sw.js` con `VERSION = 'control-gastos-vN'`; **cada cambio en un archivo de la app sube N**; archivo nuevo → sumarlo a `ARCHIVOS`.
 - Comentarios en español que explican el porqué.
+- App independiente y pública (MIT, `LICENSE` ya en el repo). **No** es parte de la suite QualityOS: ni su nombre ni su marca en la app ni en las guías.
 - Semana de lunes a domingo. Duración de insumo = promedio de los intervalos entre las últimas 4 aperturas.
 - "General" es un producto fijo: solo gastos, nunca ventas, no se reparte, no se puede borrar ni renombrar.
 
@@ -347,7 +348,7 @@ Más: Calculadora (desde el formulario muestra "Usar este número", que pone `Ca
 ### Task 9: PWA, publicación y guías
 
 **Files:**
-- Create: `sw.js`, `manifest.json`, `icons/icon.svg`, `icons/icon-192.png`, `icons/icon-512.png`, `GUIA-PUBLICACION.md`, `docs/GUIA.md`, `docs/img/*`, `tools/demo.js`, `tools/ejemplo.js`, `README.md`, `CLAUDE.md`, `LICENSE` (MIT), `.gitignore`
+- Create: `sw.js`, `manifest.json`, `icons/icon.svg`, `icons/icon-192.png`, `icons/icon-512.png`, `GUIA-PUBLICACION.md`, `docs/GUIA.md`, `docs/img/*`, `tools/demo.js`, `tools/ejemplo.js`, `README.md`, `CLAUDE.md`, `.gitignore`
 - Modify: `index.html` (link al manifest, registro del SW), `tests/e2e.js`
 
 `sw.js`: mismo esquema que `mash-check` (red primero con `cache:'no-cache'`, caché si no hay señal, `VERSION = 'control-gastos-v1'`, `ARCHIVOS` con todas las rutas relativas, borrar cachés viejas en `activate`). `manifest.json`: `name`/`short_name` "Control de Gastos", `lang` es-AR, `start_url`/`scope` `./`, `display` standalone, íconos 192/512 + maskable. Íconos PNG generados desde el SVG con Playwright (screenshot). `tools/demo.js` carga `tools/ejemplo.js` (datos inventados) y saca capturas a `docs/img/`; `docs/GUIA.md` es la guía para quien usa la app, en voseo, sin jerga, con esas capturas. `GUIA-PUBLICACION.md`: crear el repo `control-gastos`, subir archivos desde la web de GitHub, activar Pages, instalar en el celular, actualizar (subir `sw.js` siempre). `CLAUDE.md`: reglas de la sección Global Constraints + comandos de prueba.
