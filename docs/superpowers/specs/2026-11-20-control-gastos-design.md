@@ -108,7 +108,7 @@ Una barra de pestañas abajo, con 3 pestañas grandes: **Inicio · Insumos · M�
 **Formulario de Gasto** (hoja que sube desde abajo):
 1. Monto (teclado numérico, grande) con botón de **calculadora** al lado.
 2. ¿Para qué producto? → botones: Bidones · Pizzetas · General.
-3. ¿Qué compraste? → botones de rubro (Harina, Huevos, Azúcar, Envases, Nafta, Otros…).
+3. ¿Qué compraste? → botones de rubro (Harina, Huevos, Azúcar, Envases, Gas, Otros…).
 4. Fecha (por defecto hoy; cambiable) y nota opcional, abajo y chicas.
 5. [Guardar].
 
@@ -205,10 +205,11 @@ GUIA-PUBLICACION.md  cómo publicarla en GitHub Pages
 
 ## 9. Decisiones que tomé yo (a revisar)
 
-- Gastos compartidos (nafta, gas) van a **"General"**: cuentan en el total, no se reparten.
+- Gastos compartidos (como el gas) van a **"General"**: cuentan en el total, no se reparten.
 - Duración de insumos = promedio de las últimas 4 aperturas.
 - Semana lunes–domingo; pesos sin centavos.
-- Rubros iniciales: Harina, Huevos, Azúcar, Levadura, Envases, Nafta, Otros (editables).
+- Rubros iniciales: Harina, Huevos, Azúcar, Levadura, Envases, Gas, Otros (editables).
+- Sin reparto en moto por ahora (por eso no hay rubro Nafta). Rubros e insumos quedan editables para sumarlo si hace falta.
 - Insumos iniciales: Harina (1 kg), Huevos (maple), Azúcar (1 kg) (editables).
 - Se pueden agregar productos nuevos desde "Más" (ej. si suma empanadas).
 - Una venta puede ser una venta suelta o el total del día: la app no obliga.
