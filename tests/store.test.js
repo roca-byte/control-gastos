@@ -141,3 +141,12 @@ test('si el celular no tiene lugar, avisa y no miente', () => {
   assert.equal(r.ok, false); assert.match(r.error, /lugar/);
   assert.equal(Store.datos().movimientos.length, 0);
 });
+
+test('una copia sin "ultimaCopia" no rompe el recordatorio', () => {
+  Store.iniciar(falso());
+  Store.guardarMovimiento(gasto());
+  const d = JSON.parse(Store.exportarCopia('2026-11-20')).datos;
+  delete d.ultimaCopia;
+  assert.equal(Store.restaurarCopia(JSON.stringify({ app: 'control-gastos', version: 1, datos: d })).ok, true);
+  assert.equal(Store.necesitaCopia('2026-11-20'), true);
+});

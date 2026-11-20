@@ -196,7 +196,8 @@ var Store = (function () {
 
   function necesitaCopia(hoyF) {
     if (!d.movimientos.length) return false;
-    return d.ultimaCopia === null || R.diasEntre(d.ultimaCopia, hoyF) > 30;
+    // !ultimaCopia cubre null y también copias viejas o armadas a mano que no traen el campo.
+    return !d.ultimaCopia || R.diasEntre(d.ultimaCopia, hoyF) > 30;
   }
 
   return {
