@@ -20,6 +20,8 @@ Plan: `docs/superpowers/plans/2026-11-20-control-gastos.md`.
 - Interfaz en español rioplatense con voseo, sin jerga técnica. Botones de 48 px o más.
 - Escapar todo texto del usuario con `Reglas.esc()` antes de `innerHTML`.
 - Fechas `'AAAA-MM-DD'` locales (`Reglas.hoy()`); nunca `toISOString()`.
+- Colores: azul eléctrico `#1d3fd8` + amarillo `#ffd23f` (lo llamativo solo en la tarjeta de la semana); verde = entra, rojo = sale. Nada de la paleta de QualityOS.
+- Productos, tipos de gasto e insumos son editables desde la app (sirve para cualquier emprendimiento); solo "General" es fijo.
 - Montos en pesos enteros. "General" = gastos de todo el negocio: no lleva ventas ni se reparte.
 - Nada de datos reales del negocio en el repo: los de ejemplo son inventados (`tools/ejemplo.js`).
 - WhatsApp automático: pedido para más adelante, no ahora.

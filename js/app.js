@@ -57,7 +57,7 @@
         '<button type="button" class="enlace" data-act="tab" data-tab="mas">Guardala desde "Más"</button></div>');
     }
 
-    h.push('<section class="tarjeta">',
+    h.push('<section class="tarjeta hero">',
       '<div class="modo">',
       '<button type="button" data-act="modo" data-modo="semana" aria-pressed="' + (estado.modo === 'semana') + '">Semana</button>',
       '<button type="button" data-act="modo" data-modo="mes" aria-pressed="' + (estado.modo === 'mes') + '">Mes</button>',

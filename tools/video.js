@@ -24,24 +24,24 @@ function preparar() {
   const css = document.createElement('style');
   css.textContent = `
     #v-cartel { position: fixed; left: 12px; right: 12px; top: 12px; z-index: 99; padding: 12px 16px; pointer-events: none;
-      background: rgba(60, 25, 10, .94); color: #fff; border-radius: 14px; font: 600 17px/1.35 "Segoe UI", Roboto, sans-serif;
+      background: rgba(20, 26, 51, .94); color: #fff; border-radius: 14px; font: 600 17px/1.35 "Segoe UI", Roboto, sans-serif;
       box-shadow: 0 6px 24px rgba(0,0,0,.25); transition: opacity .35s, transform .35s; }
     #v-cartel.oculto { opacity: 0; transform: translateY(-14px); }
     #v-cartel small { display: block; font-weight: 400; font-size: 14px; opacity: .85; margin-top: 2px; }
     #v-placa { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center;
-      justify-content: center; gap: 14px; text-align: center; padding: 24px; background: #7a3418; color: #fff;
+      justify-content: center; gap: 14px; text-align: center; padding: 24px; background: #1d3fd8; color: #fff;
       font-family: "Segoe UI", Roboto, sans-serif; transition: opacity .6s; }
     #v-placa.oculto { opacity: 0; pointer-events: none; }
     #v-placa img { width: 112px; height: 112px; border-radius: 24px; }
     #v-placa h1 { margin: 0; font-size: 34px; line-height: 1.15; }
     #v-placa p { margin: 0; font-size: 18px; opacity: .92; max-width: 310px; line-height: 1.4; }
-    #v-placa b { color: #ffd2b0; }
+    #v-placa b { color: #ffd23f; }
     #v-visor { position: fixed; inset: 0; z-index: 97; background: #0b141a; padding: 130px 14px 40px; transition: opacity .5s; }
     #v-visor.oculto { opacity: 0; pointer-events: none; }
     #v-visor .burbuja { background: #005c4b; color: #e9edef; border-radius: 10px 0 10px 10px; padding: 10px 12px; margin-left: 30px;
       white-space: pre-wrap; font: 15px/1.45 "Segoe UI", Roboto, sans-serif; box-shadow: 0 1px 2px rgba(0,0,0,.3); }
     .v-toque { position: fixed; z-index: 98; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%;
-      background: rgba(255, 170, 110, .35); border: 3px solid #ff9a55; pointer-events: none; animation: v-toque .6s ease-out forwards; }
+      background: rgba(255, 210, 63, .35); border: 3px solid #ffd23f; pointer-events: none; animation: v-toque .6s ease-out forwards; }
     @keyframes v-toque { from { transform: scale(.4); opacity: 1; } to { transform: scale(1.4); opacity: 0; } }`;
   document.head.appendChild(css);
   const crear = (id) => { const e = document.createElement('div'); e.id = id; e.className = 'oculto'; document.body.appendChild(e); return e; };
