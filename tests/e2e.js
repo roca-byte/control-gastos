@@ -104,6 +104,87 @@ escenario('compartir resumen sin navigator.share copia el texto', async (page, c
   assert.match(await texto(page, '#aviso'), /Copiado/);
 });
 
+escenario('insumos: cuánto dura y doble toque el mismo día', async (page) => {
+  // Una apertura de hace 4 días cargada directo, y la de hoy con el botón.
+  await page.evaluate(() => { Store.abrirInsumo('harina', Reglas.sumarDias(Reglas.hoy(), -4)); });
+  await page.click('[data-act="tab"][data-tab="insumos"]');
+  await page.click('[data-insumo="harina"] [data-act="abrir-insumo"]');
+  assert.match(await texto(page, '[data-insumo="harina"]'), /Te dura unos 4 días/);
+  assert.match(await texto(page, '[data-insumo="huevos"]'), /Todavía no hay datos/);
+  await page.click('[data-insumo="harina"] [data-act="abrir-insumo"]');
+  assert.match(await texto(page, '#aviso'), /Ya lo marcaste hoy/);
+  await page.click('[data-insumo="harina"] [data-act="deshacer-apertura"]');
+  assert.equal(await page.evaluate(() => Store.buscar('insumos', 'harina').aperturas.length), 1);
+});
+
+escenario('insumo atrasado se marca', async (page) => {
+  await page.evaluate(() => { const h = Reglas.hoy(); Store.abrirInsumo('huevos', Reglas.sumarDias(h, -30)); Store.abrirInsumo('huevos', Reglas.sumarDias(h, -20)); });
+  await page.click('[data-act="tab"][data-tab="insumos"]');
+  assert.match(await texto(page, '[data-insumo="huevos"] .atrasado'), /Ya debería estar por terminarse/);
+});
+
+escenario('agregar un insumo nuevo', async (page) => {
+  await page.click('[data-act="tab"][data-tab="insumos"]');
+  page.once('dialog', d => d.accept('Levadura'));
+  await page.click('[data-act="nuevo-insumo"]');
+  assert.match(await texto(page, '#vista'), /Levadura/);
+});
+
+escenario('calculadora pasa el resultado al monto', async (page) => {
+  await page.click('[data-act="nuevo"][data-tipo="gasto"]');
+  await page.click('#hoja [data-act="calc"]');
+  for (const t of '1500+2300=') await page.click(`#hoja [data-tecla="${t}"]`);
+  assert.equal(await texto(page, '.calc-pantalla'), '3.800');
+  await page.click('#hoja [data-act="usar-calc"]');
+  assert.equal(await page.inputValue('#monto'), '3800');
+});
+
+escenario('calculadora suelta desde Más', async (page) => {
+  await page.click('[data-act="tab"][data-tab="mas"]');
+  await page.click('[data-act="calc"]');
+  for (const t of '9×3=') await page.click(`#hoja [data-tecla="${t}"]`);
+  assert.equal(await texto(page, '.calc-pantalla'), '27');
+  assert.equal(await page.locator('#hoja [data-act="usar-calc"]').count(), 0);
+});
+
+escenario('productos y rubros editables', async (page) => {
+  await page.click('[data-act="tab"][data-tab="mas"]');
+  page.once('dialog', d => d.accept('Empanadas'));
+  await page.click('[data-act="agregar-item"][data-lista="productos"]');
+  await page.click('[data-act="tab"][data-tab="inicio"]');
+  await page.click('[data-act="nuevo"][data-tipo="venta"]');
+  assert.equal(await page.locator('#hoja [data-campo="productoId"]', { hasText: 'Empanadas' }).count(), 1);
+  await page.click('#hoja [data-act="cerrar"]');
+  await anotar(page, 'gasto', { monto: '100', producto: 'pizzetas', rubro: 'harina' });
+  await page.click('[data-act="tab"][data-tab="mas"]');
+  page.once('dialog', d => d.accept());
+  await page.click('[data-act="borrar-item"][data-lista="rubros"][data-id="harina"]');
+  assert.match(await texto(page, '#aviso'), /Tiene movimientos anotados/);
+});
+
+escenario('copia de seguridad: guardar, recuperar y rechazar un archivo equivocado', async (page) => {
+  await page.evaluate(() => { delete Navigator.prototype.share; delete Navigator.prototype.canShare; });
+  await anotar(page, 'venta', { monto: '700', producto: 'bidones' });
+  await page.click('[data-act="tab"][data-tab="mas"]');
+  const [descarga] = await Promise.all([page.waitForEvent('download'), page.click('[data-act="guardar-copia"]')]);
+  assert.match(descarga.suggestedFilename(), /^control-gastos-\d{4}-\d{2}-\d{2}\.json$/);
+  const contenido = fs.readFileSync(await descarga.path(), 'utf8');
+  await page.evaluate(() => { localStorage.clear(); Store.iniciar(localStorage); });
+  page.once('dialog', d => d.accept());
+  await page.setInputFiles('#archivo-copia', { name: 'copia.json', mimeType: 'application/json', buffer: Buffer.from(contenido) });
+  await page.waitForFunction(() => Store.datos().movimientos.length === 1);
+  page.once('dialog', d => d.accept());
+  await page.setInputFiles('#archivo-copia', { name: 'hola.json', mimeType: 'application/json', buffer: Buffer.from('hola') });
+  await page.waitForSelector('#aviso:not(.oculto)');
+  assert.match(await texto(page, '#aviso'), /no es una copia/);
+  assert.equal(await page.evaluate(() => Store.datos().movimientos.length), 1);
+});
+
+escenario('la versión se ve al pie de Más', async (page) => {
+  await page.click('[data-act="tab"][data-tab="mas"]');
+  assert.match(await texto(page, '.version'), /Control de Gastos/);
+});
+
 (async () => {
   const filtro = process.argv[2];
   const srv = servidor().listen(0);

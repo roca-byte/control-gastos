@@ -237,9 +237,158 @@
     } else avisar('Este celular no permite compartir desde acá');
   }
 
+  // ---------- Insumos ----------
+
+  var ultimoAbierto = null; // para mostrar "Deshacer" solo un rato después de tocar
+
+  function pintarInsumos() {
+    var d = Store.datos(), hoyF = R.hoy();
+    var h = ['<p class="sub">Cada vez que abras un paquete nuevo (de harina, un maple de huevos…) tocá <b>Abrí uno nuevo</b>. ',
+      'Con dos o más, la app calcula cuánto te dura.</p>'];
+    if (!d.insumos.length) h.push('<p class="sub">No hay insumos. Agregá uno abajo.</p>');
+    d.insumos.forEach(function (ins) {
+      var dur = R.duracionInsumo(ins.aperturas, hoyF);
+      var titulo = esc(ins.nombre) + (ins.presentacion ? ' <span class="sub">(' + esc(ins.presentacion) + ')</span>' : '');
+      h.push('<section class="tarjeta insumo" data-insumo="' + esc(ins.id) + '"><h3>' + titulo + '</h3>');
+      if (dur) {
+        h.push('<p class="dura">Te dura unos <b>' + dur.dias + (dur.dias === 1 ? ' día' : ' días') + '</b> · Abriste el actual el ' + esc(diaCorto(dur.abierto)) + '</p>');
+        h.push(dur.atrasado ? '<p class="atrasado">Ya debería estar por terminarse</p>'
+          : '<p class="sub">Se terminaría el ' + esc(diaCorto(dur.terminaria)) + '</p>');
+      } else if (ins.aperturas.length === 1) {
+        h.push('<p class="sub">Abriste el actual el ' + esc(diaCorto(ins.aperturas[0])) + '. Todavía no hay datos: tocá cuando abras el próximo.</p>');
+      } else {
+        h.push('<p class="sub">Todavía no hay datos: tocá cuando abras el próximo.</p>');
+      }
+      h.push('<div class="botones"><button type="button" class="boton primario" data-act="abrir-insumo" data-id="' + esc(ins.id) + '">Abrí uno nuevo</button></div>');
+      if (ultimoAbierto && ultimoAbierto.id === ins.id && Date.now() - ultimoAbierto.cuando < 10000) {
+        h.push('<div class="botones"><button type="button" class="boton" data-act="deshacer-apertura" data-id="' + esc(ins.id) + '">Deshacer (lo toqué sin querer)</button></div>');
+      }
+      if (ins.aperturas.length) {
+        var lista = ins.aperturas.slice().sort().reverse().slice(0, 8);
+        h.push('<details class="historial"><summary>Historial</summary><ul>' + lista.map(function (f) {
+          return '<li><span>' + esc(diaCorto(f)) + '</span><button type="button" data-act="borrar-apertura" data-id="' + esc(ins.id) + '" data-fecha="' + esc(f) + '">Borrar</button></li>';
+        }).join('') + '</ul></details>');
+      }
+      h.push('<div class="botones"><button type="button" class="enlace" data-act="renombrar-item" data-lista="insumos" data-id="' + esc(ins.id) + '">Cambiar nombre</button>',
+        '<button type="button" class="enlace" data-act="borrar-item" data-lista="insumos" data-id="' + esc(ins.id) + '">Borrar insumo</button></div>');
+      h.push('</section>');
+    });
+    h.push('<div class="botones"><button type="button" class="boton" data-act="nuevo-insumo">+ Agregar insumo</button></div>');
+    return h.join('');
+  }
+
+  // ---------- Más ----------
+
+  var versionApp = 'Control de Gastos';
+  // La versión sale del nombre de la caché del service worker (control-gastos-vN): así se ve
+  // si el celular ya bajó la última actualización.
+  if (window.caches && caches.keys) {
+    caches.keys().then(function (ks) {
+      var k = ks.filter(function (x) { return /^control-gastos-v\d+$/.test(x); }).sort().pop();
+      if (k) { versionApp = 'Control de Gastos · versión ' + k.split('-v')[1]; if (estado.tab === 'mas') pintar(); }
+    }).catch(function () {});
+  }
+
+  function listaEditable(titulo, lista, items) {
+    return '<section class="tarjeta"><h2>' + titulo + '</h2><ul class="lista-edit">' + items.map(function (x) {
+      var acciones = x.fijo ? '<span class="sub">fijo</span>'
+        : '<button type="button" data-act="renombrar-item" data-lista="' + lista + '" data-id="' + esc(x.id) + '" aria-label="Cambiar nombre de ' + esc(x.nombre) + '">✎</button>' +
+          '<button type="button" data-act="borrar-item" data-lista="' + lista + '" data-id="' + esc(x.id) + '" aria-label="Borrar ' + esc(x.nombre) + '">🗑</button>';
+      return '<li><span>' + esc(x.nombre) + '</span>' + acciones + '</li>';
+    }).join('') + '</ul><button type="button" class="boton" data-act="agregar-item" data-lista="' + lista + '">+ Agregar</button></section>';
+  }
+
+  function pintarMas() {
+    var d = Store.datos();
+    return [
+      '<section class="tarjeta"><h2>Herramientas</h2><div class="botones">',
+      '<button type="button" class="boton" data-act="calc">🧮 Calculadora</button>',
+      '<button type="button" class="boton" data-act="compartir">Compartir resumen</button></div>',
+      '<p class="sub">El resumen es de la semana o el mes que estás mirando en Inicio.</p></section>',
+      listaEditable('Productos', 'productos', d.productos),
+      listaEditable('¿En qué se gasta?', 'rubros', d.rubros),
+      '<section class="tarjeta"><h2>Copia de seguridad</h2>',
+      '<p class="sub">Todo lo anotado vive en este celular. Guardá una copia de vez en cuando (por ejemplo, mandátela por WhatsApp) ',
+      'para no perderlo si se rompe o se cambia el teléfono.</p>',
+      '<p class="sub">Última copia: ' + (d.ultimaCopia ? esc(diaCorto(d.ultimaCopia)) : 'nunca') + '</p>',
+      '<div class="botones"><button type="button" class="boton primario" data-act="guardar-copia">Guardar copia</button>',
+      '<button type="button" class="boton" data-act="recuperar-copia">Recuperar copia</button></div>',
+      '<input type="file" id="archivo-copia" accept=".json,application/json" class="oculto">',
+      '</section>',
+      '<p class="version">' + esc(versionApp) + '</p>'
+    ].join('');
+  }
+
+  function guardarCopia() {
+    var texto = Store.exportarCopia(), nombre = 'control-gastos-' + R.hoy() + '.json';
+    var archivo = null;
+    try { archivo = new File([texto], nombre, { type: 'application/json' }); } catch (e) { archivo = null; }
+    // En el celular se ofrece compartir el archivo (WhatsApp, Drive, mail…); si no, se descarga.
+    if (archivo && navigator.canShare && navigator.share && navigator.canShare({ files: [archivo] })) {
+      navigator.share({ files: [archivo], title: 'Copia de Control de Gastos' }).catch(function () {});
+    } else {
+      var url = URL.createObjectURL(new Blob([texto], { type: 'application/json' }));
+      var a = document.createElement('a');
+      a.href = url; a.download = nombre;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    }
+    pintar();
+    avisar('Copia guardada');
+  }
+
+  function recuperarCopia(input) {
+    var archivo = input.files && input.files[0];
+    input.value = ''; // para poder elegir el mismo archivo otra vez
+    if (!archivo) return;
+    if (!confirm('Esto reemplaza todo lo que hay ahora. ¿Seguís?')) return;
+    var lector = new FileReader();
+    lector.onload = function () {
+      var r = Store.restaurarCopia(String(lector.result));
+      if (!r.ok) return avisar(r.error, 5000);
+      pintar();
+      avisar('Copia recuperada');
+    };
+    lector.onerror = function () { avisar('No se pudo leer el archivo', 5000); };
+    lector.readAsText(archivo);
+  }
+
+  // ---------- Calculadora (en la hoja) ----------
+
+  function abrirCalc() {
+    // Desde un formulario se guarda lo escrito para volver con todo igual.
+    leerCampos();
+    estado.calc = { e: Calculadora.nueva(), desdeForm: !!estado.form };
+    pintarCalc();
+  }
+
+  function pintarCalc() {
+    var c = estado.calc;
+    var teclas = ['C', '⌫', '÷', '×', '7', '8', '9', '−', '4', '5', '6', '+', '1', '2', '3', '=', '0', ','];
+    var h = ['<h2>Calculadora</h2><div class="calc-pantalla" aria-live="polite">' + esc(Calculadora.pantalla(c.e)) + '</div><div class="calc-teclas">'];
+    teclas.forEach(function (t) {
+      var clase = '+−×÷'.indexOf(t) >= 0 ? 'op' : t === '=' ? 'igual' : '';
+      var span = t === '0' ? ' style="grid-column: span 3"' : '';
+      h.push('<button type="button" class="' + clase + '" data-act="tecla" data-tecla="' + t + '"' + span + '>' + t + '</button>');
+    });
+    h.push('</div>');
+    if (c.desdeForm) {
+      h.push('<div class="botones"><button type="button" class="boton" data-act="volver-form">Volver</button>',
+        '<button type="button" class="boton primario" data-act="usar-calc">Usar este número</button></div>');
+    } else {
+      h.push('<div class="botones"><button type="button" class="boton" data-act="cerrar">Cerrar</button></div>');
+    }
+    pintarHoja(h.join(''));
+  }
+
+  function pedirNombre(texto, actual) {
+    var n = prompt(texto, actual || '');
+    return n === null ? null : n.trim();
+  }
+
   // ---------- Pantallas y eventos ----------
 
-  var PANTALLAS = { inicio: pintarInicio };
+  var PANTALLAS = { inicio: pintarInicio, insumos: pintarInsumos, mas: pintarMas };
 
   function pintar() {
     var pantalla = PANTALLAS[estado.tab] || pintarInicio;
@@ -280,8 +429,74 @@
       cerrarHoja(); pintar(); avisar('Borrado');
     },
     cerrar: cerrarHoja,
-    compartir: compartir
+    compartir: compartir,
+
+    'abrir-insumo': function (el) {
+      var id = el.getAttribute('data-id');
+      if (!Store.abrirInsumo(id, R.hoy())) return avisar('Ya lo marcaste hoy');
+      ultimoAbierto = { id: id, cuando: Date.now() };
+      pintar();
+      avisar('Anotado');
+      // Pasados los 10 s se redibuja para que desaparezca "Deshacer".
+      setTimeout(function () { if (estado.tab === 'insumos' && !estado.form && !estado.calc) pintar(); }, 10500);
+    },
+    'deshacer-apertura': function (el) { Store.deshacerApertura(el.getAttribute('data-id')); ultimoAbierto = null; pintar(); avisar('Deshecho'); },
+    'borrar-apertura': function (el) {
+      if (!confirm('¿Borrar esa fecha del historial?')) return;
+      Store.borrarApertura(el.getAttribute('data-id'), el.getAttribute('data-fecha')); pintar();
+    },
+    'nuevo-insumo': function () {
+      var nombre = pedirNombre('¿Cómo se llama el insumo? (por ejemplo: Levadura)');
+      if (!nombre) return;
+      var pres = pedirNombre('¿Cómo viene? (por ejemplo: 1 kg, sobre, maple). Podés dejarlo vacío.') || '';
+      if (Store.agregar('insumos', { nombre: nombre, presentacion: pres })) pintar(); else avisar('No se pudo agregar');
+    },
+
+    'agregar-item': function (el) {
+      var lista = el.getAttribute('data-lista');
+      var nombre = pedirNombre(lista === 'productos' ? '¿Qué producto querés agregar?' : '¿Qué tipo de gasto querés agregar?');
+      if (!nombre) return;
+      if (Store.agregar(lista, { nombre: nombre })) { pintar(); avisar('Agregado'); } else avisar('No se pudo agregar');
+    },
+    'renombrar-item': function (el) {
+      var lista = el.getAttribute('data-lista'), item = Store.buscar(lista, el.getAttribute('data-id'));
+      if (!item) return;
+      var nombre = pedirNombre('Nuevo nombre:', item.nombre);
+      if (nombre === null) return;
+      var campos = { nombre: nombre };
+      if (lista === 'insumos') {
+        var pres = pedirNombre('¿Cómo viene?', item.presentacion);
+        if (pres !== null) campos.presentacion = pres;
+      }
+      var r = Store.renombrar(lista, item.id, campos);
+      if (!r.ok) return avisar(r.error, 4000);
+      pintar();
+    },
+    'borrar-item': function (el) {
+      var lista = el.getAttribute('data-lista'), item = Store.buscar(lista, el.getAttribute('data-id'));
+      if (!item || !confirm('¿Borrar "' + item.nombre + '"?')) return;
+      var r = Store.borrar(lista, item.id);
+      if (!r.ok) return avisar(r.error, 4000);
+      pintar(); avisar('Borrado');
+    },
+
+    'guardar-copia': guardarCopia,
+    'recuperar-copia': function () { $('#archivo-copia').click(); },
+
+    calc: abrirCalc,
+    tecla: function (el) { estado.calc.e = Calculadora.tecla(estado.calc.e, el.getAttribute('data-tecla')); pintarCalc(); },
+    'volver-form': function () { estado.calc = null; pintarHoja(); },
+    'usar-calc': function () {
+      var v = Calculadora.valor(estado.calc.e);
+      estado.calc = null;
+      if (v !== null && v > 0) estado.form.monto = String(Math.round(v));
+      pintarHoja();
+    }
   };
+
+  document.addEventListener('change', function (e) {
+    if (e.target.id === 'archivo-copia') recuperarCopia(e.target);
+  });
 
   document.addEventListener('click', function (e) {
     var el = e.target.closest('[data-act]');
